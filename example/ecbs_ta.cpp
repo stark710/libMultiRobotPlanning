@@ -95,6 +95,7 @@ struct Conflict {
   int x2;
   int y2;
 
+
   friend std::ostream& operator<<(std::ostream& os, const Conflict& c) {
     switch (c.type) {
       case Vertex:
@@ -269,13 +270,18 @@ class Environment {
         m_lowLevelExpanded(0),
         m_heuristic(dimx, dimy, obstacles) {
     m_numAgents = startStates.size();
+    int num_goals = goals.size();
     for (size_t i = 0; i < startStates.size(); ++i) {
+      int count = 0;
       for (const auto& goal : goals[i]) {
+        count++;
         m_assignment.setCost(
             i, goal, m_heuristic.getValue(
                          Location(startStates[i].x, startStates[i].y), goal));
         m_goals.insert(goal);
       }
+      std::cout<<"Agent "<<i<<" has "<<count<<" goals"<<std::endl;
+      
     }
     m_assignment.solve();
   }
@@ -631,14 +637,21 @@ int main(int argc, char* argv[]) {
   for (const auto& node : config["map"]["obstacles"]) {
     obstacles.insert(Location(node[0].as<int>(), node[1].as<int>()));
   }
-
+  int count = 0;
   for (const auto& node : config["agents"]) {
     const auto& start = node["start"];
+    // for (const auto &g : node["goal"]) {
+    //   goals.back().emplace(Location(g[0].as<int>(), g[1].as<int>()));
+    // }
+    const auto& goal = node["goal"];
     startStates.emplace_back(State(0, start[0].as<int>(), start[1].as<int>()));
     goals.resize(goals.size() + 1);
+   
     for (const auto& goal : node["potentialGoals"]) {
+      
       goals.back().emplace(Location(goal[0].as<int>(), goal[1].as<int>()));
     }
+    // goals.resize(goals.size() + 1);
   }
 
   // sanity check: no identical start states
@@ -657,7 +670,6 @@ int main(int argc, char* argv[]) {
          Environment>
       cbs(mapf, w);
   std::vector<PlanResult<State, Action, int> > solution;
-
   Timer timer;
   bool success = cbs.search(startStates, solution);
   timer.stop();

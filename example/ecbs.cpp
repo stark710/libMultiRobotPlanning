@@ -584,7 +584,7 @@ int main(int argc, char* argv[]) {
     // std::cout << "s: " << startStates.back() << std::endl;
     goals.emplace_back(Location(goal[0].as<int>(), goal[1].as<int>()));
   }
-
+  std::cout<<"number of goals: "<<goals.size()<<std::endl;
   // sanity check: no identical start states
   std::unordered_set<State> startStatesSet;
   for (const auto& s : startStates) {
@@ -608,6 +608,7 @@ int main(int argc, char* argv[]) {
     int cost = 0;
     int makespan = 0;
     for (const auto& s : solution) {
+      
       cost += s.cost;
       makespan = std::max<int>(makespan, s.cost);
     }
