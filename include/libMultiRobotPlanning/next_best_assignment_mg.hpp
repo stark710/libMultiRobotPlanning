@@ -3,7 +3,7 @@
 #include <queue>
 #include <set>
 
-#include <libMultiRobotPlanning/assignment.hpp>
+#include <libMultiRobotPlanning/assignment_mg.hpp>
 
 namespace libMultiRobotPlanning {
 

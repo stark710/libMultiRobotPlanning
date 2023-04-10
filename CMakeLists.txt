@@ -37,23 +37,28 @@ set(ALL_SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/a_star.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/a_star_epsilon.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/assignment.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/assignment_mg.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/cbs.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/cbs_ta.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/ecbs.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/ecbs_ta.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/ecbs_ta_mg.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/neighbor.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/next_best_assignment.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/next_best_assignment_mg.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/planresult.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/sipp.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/a_star.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/a_star_epsilon.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/assignment.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/example/assignment_mg.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/cbs.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/cbs_ta.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/ecbs.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/ecbs_ta.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/mapf_prioritized_sipp.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/next_best_assignment.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/example/next_best_assignment_mg.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/shortest_path_heuristic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/shortest_path_heuristic.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/sipp.cpp
@@ -153,6 +158,15 @@ add_executable(ecbs_ta
   example/ecbs_ta.cpp
 )
 target_link_libraries(ecbs_ta
+  ${Boost_LIBRARIES}
+  yaml-cpp
+)
+
+## ecbs_ta_mg
+add_executable(ecbs_ta_mg
+  example/ecbs_ta_mg.cpp
+)
+target_link_libraries(ecbs_ta_mg
   ${Boost_LIBRARIES}
   yaml-cpp
 )
