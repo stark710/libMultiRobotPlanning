@@ -269,7 +269,7 @@ class Environment {
         m_lowLevelExpanded(0),
         m_heuristic(dimx, dimy, obstacles) {
     m_numAgents = startStates.size();
-    for (size_t i = 0; i < startStates.size(); ++i) {
+    for (size_t i = 0; i < m_numAgents; ++i) {
       for (const auto& goal : goals[i]) {
         m_assignment.setCost(
             i, goal, m_heuristic.getValue(
@@ -593,9 +593,10 @@ int main(int argc, char* argv[]) {
   float w;
   size_t maxTaskAssignments;
   desc.add_options()("help", "produce help message")(
-      "input,i", po::value<std::string>(&inputFile)->required(),
+      "input,i", po::value<std::string>(&inputFile)->default_value("../benchmark/custom/mapfta1.yaml"),
       "input file (YAML)")("output,o",
-                           po::value<std::string>(&outputFile)->required(),
+                           po::value<std::string>(&outputFile)->default_value(
+                               "output.yaml"),
                            "output file (YAML)")(
       "suboptimality,w", po::value<float>(&w)->default_value(1.0),
       "suboptimality bound")(
@@ -617,7 +618,7 @@ int main(int argc, char* argv[]) {
     std::cerr << desc << std::endl;
     return 1;
   }
-
+  std::cout << "inputFile: " << inputFile << std::endl;
   YAML::Node config = YAML::LoadFile(inputFile);
 
   std::unordered_set<Location> obstacles;

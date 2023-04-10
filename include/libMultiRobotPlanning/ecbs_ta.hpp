@@ -95,13 +95,15 @@ class ECBSTA {
               std::vector<PlanResult<State, Action, Cost> >& solution) {
     HighLevelNode start;
     size_t numAgents = initialStates.size();
+
+    //Initialize to the right vector sizes so you can index into it later 
     start.solution.resize(numAgents);
     start.constraints.resize(numAgents);
     start.cost = 0;
     start.LB = 0;
     start.id = 0;
     start.isRoot = true;
-    m_env.nextTaskAssignment(start.tasks);
+    m_env.nextTaskAssignment(start.tasks); // First assignment 
 
     // // TODO: hack
     // Cost startCost = m_env.nextTaskAssignment(start.tasks);
@@ -114,7 +116,11 @@ class ECBSTA {
     //   }
     // }
 
-    for (size_t i = 0; i < initialStates.size(); ++i) {
+
+    // -------------------------- Find individual paths ----------------------------------
+    for (size_t i = 0; i < numAgents; ++i) {
+
+      // If there exists a solution for that agent, use that 
       if (i < solution.size() && solution[i].states.size() > 1) {
         std::cout << initialStates[i] << " " << solution[i].states.front().first
                   << std::endl;
@@ -135,6 +141,11 @@ class ECBSTA {
       start.cost += start.solution[i].cost;
       start.LB += start.solution[i].fmin;
     }
+
+    
+
+
+    // Estimates the number of conflicts 
     start.focalHeuristic = m_env.focalHeuristic(start.solution);
     // std::cout << "initital cost: " << start.cost << " LB: " << start.LB <<
     // std::endl;
@@ -241,6 +252,7 @@ class ECBSTA {
       // std::cout << "expand: " << P << std::endl;
 
       focal.pop();
+      // Remove that node you popped from focal from open as well 
       open.erase(h);
 
       Conflict conflict;
@@ -296,6 +308,7 @@ class ECBSTA {
         ++id;
       }
 
+// Check if the current node is the root node 
 #if defined(STYLE_CBSTA)
       if (P.isRoot) {
 #elif defined(STYLE_MINROOT)
