@@ -6,8 +6,8 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <libMultiRobotPlanning/ecbs_ta_mg.hpp>
-#include <libMultiRobotPlanning/next_best_assignment_mg.hpp>
+#include <libMultiRobotPlanning/ecbs_ta.hpp>
+#include <libMultiRobotPlanning/next_best_assignment.hpp>
 #include "timer.hpp"
 
 using libMultiRobotPlanning::ECBSTA;

@@ -57,14 +57,15 @@ struct hash<Location> {
 };
 }  // namespace std
 #include "shortest_path_heuristic.hpp"
-
-void createMultiGoalCostMatrix(std::string inputFile, NextBestAssignment<std::string, std::string> &assignment){
-
+typedef std::unordered_map<std::string, std::vector<std::vector<int>>> t_map;
+  
+t_map createMultiGoalCostMatrix(std::string inputFile, NextBestAssignment<std::string, std::string> &assignment){
   YAML::Node config = YAML::LoadFile(inputFile);
 
   std::unordered_set<Location> obstacles;
   std::vector<std::unordered_set<Location> > goals;
   std::vector<State> startStates;
+  t_map task_definition; 
   
   const auto& dim = config["map"]["dimensions"];
   int dimx = dim[0].as<int>();
@@ -76,7 +77,6 @@ void createMultiGoalCostMatrix(std::string inputFile, NextBestAssignment<std::st
   int agent_id=0;
   int task_id = 0;
   for (const auto& node : config["agents"]) {
-    
     std::vector<std::vector<int>> agent_potential_goals;
     ShortestPathHeuristic m_heuristic(dimx, dimy, obstacles);
 
@@ -85,6 +85,11 @@ void createMultiGoalCostMatrix(std::string inputFile, NextBestAssignment<std::st
     goals.resize(goals.size() + 1);
     task_id = 0;
     for (const auto& goal : node["potentialGoals"]) {
+
+      std::vector<std::vector<int>> all_goals = goal.as<std::vector<std::vector<int>>>();
+      task_definition[std::to_string(task_id)] = all_goals;
+
+      
       std::vector<int> goal_last_element = goal.as<std::vector<std::vector<int>>>().back();
       int cost = m_heuristic.getValue(startStates[agent_id].location, Location(goal_last_element[0], goal_last_element[1]));
       assignment.setCost(std::to_string(agent_id), std::to_string(task_id), cost);
@@ -93,7 +98,7 @@ void createMultiGoalCostMatrix(std::string inputFile, NextBestAssignment<std::st
     agent_id++;
   }
 
-  return; 
+  return task_definition; 
 }
 
 int main(int argc, char* argv[]) {
@@ -156,8 +161,8 @@ int main(int argc, char* argv[]) {
   // }
   std::map<std::string, std::string> solution;
   NextBestAssignment<std::string, std::string> assignment;
-  createMultiGoalCostMatrix(inputFile, assignment);
-  assignment.solve();
+  t_map task_definition = createMultiGoalCostMatrix(inputFile, assignment);
+  assignment.solve(task_definition);
 
   std::ofstream out(outputFile);
   out << "solutions:" << std::endl;
@@ -171,7 +176,7 @@ int main(int argc, char* argv[]) {
       break;
     }
     out << "  - cost: " << c << std::endl;
-    out << "    assignment:" << std::endl;
+    out << "  - assignment:" << std::endl;
     for (const auto& s : solution) {
       out << "      " << s.first << ": " << s.second << std::endl;
     }

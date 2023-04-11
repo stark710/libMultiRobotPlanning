@@ -15,9 +15,10 @@ int main(int argc, char* argv[]) {
   std::string inputFile;
   std::string outputFile;
   desc.add_options()("help", "produce help message")(
-      "input,i", po::value<std::string>(&inputFile)->required(),
+      "input,i", po::value<std::string>(&inputFile)->default_value("../benchmark/custom/mapfta1.yaml"),
       "input cost (txt)")("output,o",
-                          po::value<std::string>(&outputFile)->required(),
+                          po::value<std::string>(&outputFile)->default_value(
+                               "output_ecbsta.yaml"),
                           "output file (YAML)");
 
   try {

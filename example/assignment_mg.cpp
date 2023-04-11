@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
   //   }
   // }
 
-  std::map<std::string, std::string> solution;
+  std::map<std::string, std::vector<std::string>> solution;
   int64_t c = assignment.solve(solution);
 
   std::cout << "solution with cost: " << c << std::endl;

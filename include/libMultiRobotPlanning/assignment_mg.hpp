@@ -78,7 +78,7 @@ class Assignment {
   }
 
   // find first (optimal) solution with minimal cost
-  long solve(std::map<Agent, Task>& solution) {
+  long solve(std::map<Agent, Task& solution) {
     using namespace boost;
 
     successive_shortest_path_nonnegative_weights(
@@ -105,8 +105,16 @@ class Assignment {
         if (!m_graph[*eit2].isReverseEdge) {
           vertex_t taskVertex = target(*eit2, m_graph);
           if (m_graph[*eit2].residualCapacity == 0) {
-            solution[m_agents.right.at(agentVertex)] =
-                m_tasks.right.at(taskVertex);
+            
+            // If the agent is already in the solution, add the task to the vector
+            if (solution.find(m_agents.right.at(agentVertex)) != solution.end()) {
+              solution[m_agents.right.at(agentVertex)].push_back(m_tasks.right.at(taskVertex));
+            }
+
+            else{
+              solution[m_agents.right.at(agentVertex)] = {m_tasks.right.at(taskVertex)};
+            }
+          
             cost += m_graph[edge(agentVertex, taskVertex, m_graph).first].cost;
             break;
           }

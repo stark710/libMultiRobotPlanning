@@ -55,6 +55,31 @@ class NextBestAssignment {
     m_numMatching = numMatching(n.solution);
   }
 
+  void printTasks(std::string task_id, std::unordered_map<std::string, std::vector<std::vector<int>>> task_definition){
+
+    std::cout << "Task " << task_id  << " goals: "<< std::endl;
+    int num_goals = task_definition[task_id].size();
+
+    for (int i=0 ;i < num_goals; i++)
+      std::cout << "( " << task_definition[task_id][i][0] << ", " << task_definition[task_id][i][1] << " )" << std::endl;
+    return;
+  }
+
+  void solve(std::unordered_map<std::string, std::vector<std::vector<int>>> task_definition){
+    const std::set<std::pair<Agent, Task> > I, O;
+    const std::set<Agent> Iagents, Oagents;
+    Node n;
+    n.cost = constrainedMatching(I, O, Iagents, Oagents, n.solution);
+    m_open.emplace(n);
+    m_numMatching = numMatching(n.solution);
+
+    // std::cout << "constrainedMatching: internal Solution: " << std::endl;
+    for(const auto& c : n.solution) {
+      std::cout << "Agent ID: " << c.first << std::endl;
+      printTasks(c.second, task_definition);
+    }
+  }
+
   // find next solution
   long nextSolution(std::map<Agent, Task>& solution) {
     solution.clear();
@@ -158,10 +183,10 @@ class NextBestAssignment {
     m_assignment.solve(solution);
     size_t matching = numMatching(solution);
 
-    std::cout << "constrainedMatching: internal Solution: " << std::endl;
-    for (const auto& c : solution) {
-      std::cout << "    " << c.first << "->" << c.second << std::endl;
-    }
+    // std::cout << "constrainedMatching: internal Solution: " << std::endl;
+    // for (const auto& c : solution) {
+    //   std::cout << "    " << c.first << "->" << c.second << std::endl;
+    // }
 
     // check if all agents in Iagents have an assignment as requested
     bool solutionValid = true;

@@ -180,6 +180,14 @@ target_link_libraries(next_best_assignment
   yaml-cpp
 )
 
+add_executable(next_best_assignment_mg
+  example/next_best_assignment_mg.cpp
+)
+target_link_libraries(next_best_assignment_mg
+  ${Boost_LIBRARIES}
+  yaml-cpp
+)
+
 ## sipp
 add_executable(sipp
   example/sipp.cpp
