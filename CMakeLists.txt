@@ -109,6 +109,13 @@ target_link_libraries(a_star_epsilon
   ${Boost_LIBRARIES}
 )
 
+## ml_astar
+add_executable(ml_astar
+  example/ml_a_star.cpp
+)
+target_link_libraries(ml_astar
+  ${Boost_LIBRARIES}
+)
 ## assignment
 add_executable(assignment
   example/assignment.cpp
