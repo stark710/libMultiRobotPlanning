@@ -74,7 +74,7 @@ purposes.
         std::unordered_map<State, std::tuple<State, Action, Cost, Cost>,
                           StateHasher>
             cameFrom;
-
+        // dont hardcode goal label
         auto handle = openSet.push(
             Node(startState, m_env.admissibleHeuristic(startState), initialCost, 0));
         stateToHeap.insert(std::make_pair<>(startState, handle));
