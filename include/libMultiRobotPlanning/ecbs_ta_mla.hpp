@@ -3,7 +3,7 @@
 #include <map>
 
 #include "a_star_epsilon.hpp"
-
+#include "ml_a_star.hpp"
 // #define CHECK_FOCAL_LIST
 #define REBUILT_FOCAL_LIST
 
@@ -130,7 +130,7 @@ class ECBSTA {
       } else {
         LowLevelEnvironment llenv(m_env, i, start.constraints[i],
                                   start.task(i), start.solution);
-        LowLevelSearch_t lowLevel(llenv, m_w);
+        LowLevelSearch_t lowLevel(m_env);
         bool success = lowLevel.search(initialStates[i], start.solution[i]);
         if (!success) {
           return false;
@@ -287,7 +287,7 @@ class ECBSTA {
 
         LowLevelEnvironment llenv(m_env, i, newNode.constraints[i],
                                   newNode.task(i), newNode.solution);
-        LowLevelSearch_t lowLevel(llenv, m_w);
+        LowLevelSearch_t lowLevel(m_env);
         bool success = lowLevel.search(initialStates[i], newNode.solution[i]);
 
         newNode.cost += newNode.solution[i].cost;
@@ -331,7 +331,7 @@ class ECBSTA {
           for (size_t i = 0; i < numAgents; ++i) {
             LowLevelEnvironment llenv(m_env, i, n.constraints[i], n.task(i),
                                       n.solution);
-            LowLevelSearch_t lowLevel(llenv, m_w);
+            LowLevelSearch_t lowLevel(m_env);
             bool success = lowLevel.search(initialStates[i], n.solution[i]);
             if (!success) {
               allSuccessful = false;
@@ -497,18 +497,19 @@ class ECBSTA {
       // std::cout << "LL discover: " << s << std::endl;
       // m_env.onDiscoverLowLevel(s, m_agentIdx, m_constraints);
     }
-
-   private:
+    // int m_num_of_goals = 1;
     Environment& m_env;
+   private:
+    
     // size_t m_agentIdx;
     // const Constraints& m_constraints;
     const std::vector<PlanResult<State, Action, Cost> >& m_solution;
   };
-
- private:
   Environment& m_env;
+ private:
+  
   float m_w;
-  typedef AStarEpsilon<State, Action, Cost, LowLevelEnvironment>
+  typedef ml_AStar<State, Action, Cost, Environment>
       LowLevelSearch_t;
 };
 

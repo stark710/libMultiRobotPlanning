@@ -85,7 +85,7 @@ purposes.
 
         while (!openSet.empty()) {
           Node current = openSet.top();
-          m_env.onExpandNode(current.state, current.fScore, current.gScore);
+          // m_env.onExpandNode(current.state, current.fScore, current.gScore);
 
           // if (m_env.isSolution(current.state)) {
           //   solution.states.clear();
@@ -115,7 +115,7 @@ purposes.
           // std::cout<<"m_env.m_goal_label before condition check: "<<m_env.m_goal_label<<std::endl;
           //print current node location and label
   
-          if(current.state == m_env.m_goals[current.goal_label]) { 
+          if(m_env.isSolution(current.state)) { 
             // std::cout<<"reached a goal location! \n";
             current.goal_label +=1;
             m_env.m_goal_label +=1;
@@ -154,7 +154,7 @@ purposes.
                     openSet.push(Node(neighbor.state, fScore, tentative_gScore, current.goal_label));
                 (*handle).handle = handle;
                 stateToHeap.insert(std::make_pair<>(neighbor.state, handle));
-                m_env.onDiscover(neighbor.state, fScore, tentative_gScore);
+                // m_env.onDiscover(neighbor.state, fScore, tentative_gScore);
                 // std::cout << "  this is a new node " << fScore << "," <<
                 // tentative_gScore << std::endl;
               } else {
@@ -171,8 +171,8 @@ purposes.
                 (*handle).gScore = tentative_gScore;
                 (*handle).fScore -= delta;
                 openSet.increase(handle);
-                m_env.onDiscover(neighbor.state, (*handle).fScore,
-                                (*handle).gScore);
+                // m_env.onDiscover(neighbor.state, (*handle).fScore,
+                                // (*handle).gScore);
               }
 
               // Best path for this node so far
