@@ -115,11 +115,11 @@ purposes.
           // std::cout<<"m_env.m_goal_label before condition check: "<<m_env.m_goal_label<<std::endl;
           //print current node location and label
   
-          if(m_env.isSolution(current.state)) { 
+          if(m_env.isSolution(current.state, current.goal_label)) { 
             // std::cout<<"reached a goal location! \n";
             current.goal_label +=1;
             m_env.m_goal_label +=1;
-            if(current.goal_label==m_env.m_num_of_goals) {
+            if(current.goal_label>=m_env.m_num_of_goals-1) {
               // std::cout<<"solution found!"<<std::endl;
               solution.states.clear();
               solution.actions.clear();
@@ -140,7 +140,7 @@ purposes.
             }
           }
 
-          // traverse neighbors
+// traverse neighbors
           neighbors.clear();
           m_env.getNeighbors(current.state, neighbors);
           for (const Neighbor<State, Action, Cost>& neighbor : neighbors) {
@@ -148,10 +148,8 @@ purposes.
               Cost tentative_gScore = current.gScore + neighbor.cost;
               auto iter = stateToHeap.find(neighbor.state);
               if (iter == stateToHeap.end()) {  // Discover a new node
-                Cost fScore =
-                    tentative_gScore + m_env.admissibleHeuristic(neighbor.state);
-                auto handle =
-                    openSet.push(Node(neighbor.state, fScore, tentative_gScore, current.goal_label));
+                Cost fScore = tentative_gScore + m_env.admissibleHeuristic(neighbor.state);
+                auto handle = openSet.push(Node(neighbor.state, fScore, tentative_gScore, current.goal_label));
                 (*handle).handle = handle;
                 stateToHeap.insert(std::make_pair<>(neighbor.state, handle));
                 // m_env.onDiscover(neighbor.state, fScore, tentative_gScore);

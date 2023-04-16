@@ -188,6 +188,12 @@ class SIPP {
                  std::numeric_limits<Cost>::max();
     }
 
+    bool isSolution(const SIPPState& s, int goal_label) {
+      return m_env.isSolution(s.state, goal_label) &&
+             safeIntervals(m_env.getLocation(s.state)).at(s.interval).end ==
+                 std::numeric_limits<Cost>::max();
+    }
+
     void getNeighbors(
         const SIPPState& s,
         std::vector<Neighbor<SIPPState, SIPPAction, Cost> >& neighbors) {

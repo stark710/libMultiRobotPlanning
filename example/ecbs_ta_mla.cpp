@@ -277,14 +277,17 @@ class Environment {
         m_task_definition(task_definition) {
     
   std::map<std::string, std::string> solution;
-
+  m_assignment.solve(task_definition);
+  std::cout << " Found initial solution!" << std::endl;
   }
 
   void setLowLevelContext(size_t agentIdx, const Constraints* constraints,
-                          const Location* task) {
+                          std::map<std::string, std::vector<State>> agent_goals_map) {
     assert(constraints);
     m_agentIdx = agentIdx;
-    m_goal = task;
+    m_goals = agent_goals_map[std::to_string(m_agentIdx)];
+    m_goal_label = 0;
+    m_num_of_goals = m_goals.size();
     m_constraints = constraints;
     m_lastGoalConstraint = -1;
     if (m_goal != nullptr) {
@@ -402,12 +405,15 @@ class Environment {
     return h;
   }
 
-  bool isSolution(const State& s) {
+  bool isSolution(const State& s, int goal_label) {
     bool atGoal = true;
-    Location current_goal = m_goals[m_goal_label];
+    State current_goal = m_goals[goal_label];
 
       atGoal = s.x == current_goal.x && s.y == current_goal.y;
-    
+    if(atGoal && s.time > m_lastGoalConstraint) {
+      std::cout << "Goal: " << s.x << ", " << s.y << " at time: " << s.time << std::endl;
+    }
+
     return atGoal && s.time > m_lastGoalConstraint;
   }
 
@@ -558,10 +564,10 @@ class Environment {
     }
   }
 
-  std::map<std::string, std::vector<State>> taskToGoals(std::map<std::string, std::string> task_map){
+  std::map<std::string, std::vector<State>> taskToGoals(std::map<std::string, std::string> agent_task_map){
     
     std::map<std::string, std::vector<State>> agent_goals_map;
-    for(auto it = task_map.begin(); it != task_map.end(); ++it){
+    for(auto it = agent_task_map.begin(); it != agent_task_map.end(); ++it){
       std::string task_id = it->second;
       std::vector<std::vector<int>> task_goals = m_task_definition[task_id];
       std::vector<State> state_vector;
@@ -569,6 +575,7 @@ class Environment {
         State state;
         state.x = task_goals[i][0];
         state.y = task_goals[i][1];
+        state.time = 0;
         state_vector.push_back(state);
       }
       agent_goals_map.insert(std::make_pair(it->first, state_vector));
@@ -645,7 +652,7 @@ class Environment {
   const Constraints* m_constraints;
   int m_lastGoalConstraint;
   // NextBestAssignment<size_t, Location> m_assignment;
-   std::map<std::string, std::string> solution;
+  std::map<std::string, std::string> solution;
   NextBestAssignment<std::string, std::string> m_assignment;
   t_map m_task_definition;
   size_t m_maxTaskAssignments;
@@ -655,7 +662,7 @@ class Environment {
   ShortestPathHeuristic m_heuristic;
   size_t m_numAgents;
   // std::unordered_set<Location> m_goals;
-  std::vector<Location> m_goals;
+  std::vector<State> m_goals;
 };
 
 int main(int argc, char* argv[]) {
@@ -670,7 +677,7 @@ int main(int argc, char* argv[]) {
   // Added ../benchmark/custom/mapfta1.yaml as a default input file
 
   desc.add_options()("help", "produce help message")(
-      "input,i", po::value<std::string>(&inputFile)->default_value("../benchmark/8x8_obst12/map_8by8_obst12_agents1_ex0.yaml"),
+      "input,i", po::value<std::string>(&inputFile)->default_value("../benchmark/custom/mapfta1.yaml"),
       "input file (YAML)")("output,o",
                            po::value<std::string>(&outputFile)->default_value(
                                "output_ecbsta.yaml"),
@@ -736,6 +743,7 @@ int main(int argc, char* argv[]) {
   }
 
     // sanity check: no identical start states
+  // assignment.nextSolution(task,task_definition);
   std::unordered_set<State> startStatesSet;
   for (const auto& s : startStates) {
     if (startStatesSet.find(s) != startStatesSet.end()) {

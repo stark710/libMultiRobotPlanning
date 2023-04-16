@@ -128,7 +128,7 @@ class ECBSTA {
         start.solution[i] = solution[i];
         std::cout << "use existing solution for agent: " << i << std::endl;
       } else { 
-        LowLevelEnvironment llenv(m_env, i, start.constraints[i],start.taskGoalStates[std::to_string(i)], start.solution);
+        LowLevelEnvironment llenv(m_env, i, start.constraints[i],start.taskGoalStates, start.solution);
         LowLevelSearch_t lowLevel(llenv);
         bool success = lowLevel.search(initialStates[i], start.solution[i]);
         if (!success) {
@@ -285,8 +285,8 @@ class ECBSTA {
         newNode.LB -= newNode.solution[i].fmin;
 
         LowLevelEnvironment llenv(m_env, i, newNode.constraints[i],
-                                  newNode.taskGoalStates[std::to_string(i)], newNode.solution);
-        LowLevelSearch_t lowLevel(m_env);
+                                  newNode.taskGoalStates, newNode.solution);
+        LowLevelSearch_t lowLevel(llenv);
         bool success = lowLevel.search(initialStates[i], newNode.solution[i]);
 
         newNode.cost += newNode.solution[i].cost;
@@ -328,9 +328,8 @@ class ECBSTA {
 
           bool allSuccessful = true;
           for (size_t i = 0; i < numAgents; ++i) {
-            LowLevelEnvironment llenv(m_env, i, n.constraints[i], n.taskGoalStates[std::to_string(i)],
-                                      n.solution);
-            LowLevelSearch_t lowLevel(m_env);
+            LowLevelEnvironment llenv(m_env, i, n.constraints[i], n.taskGoalStates,n.solution);
+            LowLevelSearch_t lowLevel(llenv);
             bool success = lowLevel.search(initialStates[i], n.solution[i]);
             if (!success) {
               allSuccessful = false;
@@ -453,14 +452,15 @@ class ECBSTA {
   struct LowLevelEnvironment {
     LowLevelEnvironment(
         Environment& env, size_t agentIdx, const Constraints& constraints,
-        const Task* task,
+        std::map<std::string, std::vector<State>> agent_goals_map,
         const std::vector<PlanResult<State, Action, Cost> >& solution)
-        : m_env(env)
+        : m_env(env), m_goal_label(0)
           // , m_agentIdx(agentIdx)
           // , m_constraints(constraints)
           ,
           m_solution(solution) {
-      m_env.setLowLevelContext(agentIdx, &constraints, task);
+      m_env.setLowLevelContext(agentIdx, &constraints, agent_goals_map);
+      m_num_of_goals = m_env.m_num_of_goals;
     }
 
     Cost admissibleHeuristic(const State& s) {
@@ -477,7 +477,7 @@ class ECBSTA {
                                             m_solution);
     }
 
-    bool isSolution(const State& s) { return m_env.isSolution(s); }
+    bool isSolution(const State& s, int goal_label) { return m_env.isSolution(s, goal_label); }
 
     void getNeighbors(const State& s,
                       std::vector<Neighbor<State, Action, Cost> >& neighbors) {
@@ -498,6 +498,8 @@ class ECBSTA {
     }
     // int m_num_of_goals = 1;
     Environment& m_env;
+    int m_num_of_goals;
+    int m_goal_label;
    private:
     
     // size_t m_agentIdx;
