@@ -596,7 +596,7 @@ int main(int argc, char* argv[]) {
   // Added ../benchmark/custom/mapfta1.yaml as a default input file
 
   desc.add_options()("help", "produce help message")(
-      "input,i", po::value<std::string>(&inputFile)->default_value("../benchmark/custom/mapfta1.yaml"),
+      "input,i", po::value<std::string>(&inputFile)->default_value("../benchmark/8x8_obst12/map_8by8_obst12_agents1_ex0.yaml"),
       "input file (YAML)")("output,o",
                            po::value<std::string>(&outputFile)->default_value(
                                "output_ecbsta.yaml"),

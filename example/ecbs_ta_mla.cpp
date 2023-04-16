@@ -16,6 +16,7 @@ using libMultiRobotPlanning::PlanResult;
 using libMultiRobotPlanning::NextBestAssignment;
 
 struct State {
+  State() = default;
   State(int time, int x, int y) : time(time), x(x), y(y) {}
 
   bool operator==(const State& s) const {
@@ -247,6 +248,8 @@ struct hash<Location> {
 }  // namespace std
 
 #include "shortest_path_heuristic.hpp"
+typedef std::map<std::string, std::vector<std::vector<int>>> t_map;
+ 
 
 ///
 class Environment {
@@ -255,7 +258,9 @@ class Environment {
               const std::unordered_set<Location>& obstacles,
               const std::vector<State>& startStates,
               const std::vector<std::unordered_set<Location> >& goals,
-              size_t maxTaskAssignments)
+              size_t maxTaskAssignments,
+              NextBestAssignment<std::string, std::string> assignment,
+              t_map task_definition)
       : m_dimx(dimx),
         m_dimy(dimy),
         m_obstacles(obstacles),
@@ -267,20 +272,11 @@ class Environment {
         m_numTaskAssignments(0),
         m_highLevelExpanded(0),
         m_lowLevelExpanded(0),
-        m_heuristic(dimx, dimy, obstacles) {
+        m_heuristic(dimx, dimy, obstacles),
+        m_assignment(assignment),
+        m_task_definition(task_definition) {
     
-
-    // Things needed by multi-goal task : startstates, 
-    m_numAgents = startStates.size();
-    for (size_t i = 0; i < m_numAgents; ++i) {
-      for (const auto& goal : goals[i]) {
-        m_assignment.setCost(
-            i, goal, m_heuristic.getValue(
-                         Location(startStates[i].x, startStates[i].y), goal));
-        m_goals.push_back(goal);
-      }
-    }
-    m_assignment.solve();
+  std::map<std::string, std::string> solution;
 
   }
 
@@ -562,12 +558,34 @@ class Environment {
     }
   }
 
-  void nextTaskAssignment(std::map<size_t, Location>& tasks) {
+  std::map<std::string, std::vector<State>> taskToGoals(std::map<std::string, std::string> task_map){
+    
+    std::map<std::string, std::vector<State>> agent_goals_map;
+    for(auto it = task_map.begin(); it != task_map.end(); ++it){
+      std::string task_id = it->second;
+      std::vector<std::vector<int>> task_goals = m_task_definition[task_id];
+      std::vector<State> state_vector;
+      for (int i=0; i<task_goals.size(); i++){
+        State state;
+        state.x = task_goals[i][0];
+        state.y = task_goals[i][1];
+        state_vector.push_back(state);
+      }
+      agent_goals_map.insert(std::make_pair(it->first, state_vector));
+    }
+
+    return agent_goals_map;
+  }
+
+  void nextTaskAssignment(std::map<std::string, std::string> tasks, 
+  std::map<std::string, std::vector<State>> &agent_goals_map) {
     if (m_numTaskAssignments > m_maxTaskAssignments) {
       return;
     }
 
-    int64_t cost = m_assignment.nextSolution(tasks);
+    int64_t cost = m_assignment.nextSolution(tasks, m_task_definition);
+    agent_goals_map = taskToGoals(tasks);
+
     if (!tasks.empty()) {
       std::cout << "nextTaskAssignment: cost: " << cost << std::endl;
       for (const auto& s : tasks) {
@@ -626,7 +644,10 @@ class Environment {
   
   const Constraints* m_constraints;
   int m_lastGoalConstraint;
-  NextBestAssignment<size_t, Location> m_assignment;
+  // NextBestAssignment<size_t, Location> m_assignment;
+   std::map<std::string, std::string> solution;
+  NextBestAssignment<std::string, std::string> m_assignment;
+  t_map m_task_definition;
   size_t m_maxTaskAssignments;
   size_t m_numTaskAssignments;
   int m_highLevelExpanded;
@@ -675,13 +696,13 @@ int main(int argc, char* argv[]) {
     std::cerr << desc << std::endl;
     return 1;
   }
-  std::cout << "inputFile: " << inputFile << std::endl;
   YAML::Node config = YAML::LoadFile(inputFile);
-
+  NextBestAssignment<std::string, std::string> assignment;
   std::unordered_set<Location> obstacles;
   std::vector<std::unordered_set<Location> > goals;
   std::vector<State> startStates;
-
+  t_map task_definition; 
+  
   const auto& dim = config["map"]["dimensions"];
   int dimx = dim[0].as<int>();
   int dimy = dim[1].as<int>();
@@ -689,28 +710,43 @@ int main(int argc, char* argv[]) {
   for (const auto& node : config["map"]["obstacles"]) {
     obstacles.insert(Location(node[0].as<int>(), node[1].as<int>()));
   }
-
+  int agent_id=0;
+  int task_id = 0;
   for (const auto& node : config["agents"]) {
+    std::vector<std::vector<int>> agent_potential_goals;
+    ShortestPathHeuristic m_heuristic(dimx, dimy, obstacles);
+
     const auto& start = node["start"];
     startStates.emplace_back(State(0, start[0].as<int>(), start[1].as<int>()));
     goals.resize(goals.size() + 1);
+    task_id = 0;
     for (const auto& goal : node["potentialGoals"]) {
-      goals.back().emplace(Location(goal[0].as<int>(), goal[1].as<int>()));
+
+      std::vector<std::vector<int>> all_goals = goal.as<std::vector<std::vector<int>>>();
+      task_definition[std::to_string(task_id)] = all_goals;
+
+      
+      std::vector<int> goal_last_element = goal.as<std::vector<std::vector<int>>>().back();
+      int cost = m_heuristic.getValue(Location(startStates[agent_id].x,startStates[agent_id].y), Location(goal_last_element[0], goal_last_element[1]));
+      
+      assignment.setCost(std::to_string(agent_id), std::to_string(task_id), cost);
+      task_id++;
     }
+    agent_id++;
   }
 
-  // sanity check: no identical start states
+    // sanity check: no identical start states
   std::unordered_set<State> startStatesSet;
   for (const auto& s : startStates) {
     if (startStatesSet.find(s) != startStatesSet.end()) {
       std::cout << "Identical start states detected -> no solution!" << std::endl;
-      return 0;
+      return {};
     }
     startStatesSet.insert(s);
   }
 
   Environment mapf(dimx, dimy, obstacles, startStates, goals,
-                   maxTaskAssignments);
+                   maxTaskAssignments, assignment, task_definition);
 
 
   ECBSTA<State, Action, int, Conflict, Constraints, Location,

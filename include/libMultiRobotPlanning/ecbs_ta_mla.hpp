@@ -103,7 +103,7 @@ class ECBSTA {
     start.LB = 0;
     start.id = 0;
     start.isRoot = true;
-    m_env.nextTaskAssignment(start.tasks); // First assignment 
+    m_env.nextTaskAssignment(start.tasks, start.taskGoalStates); // First assignment 
 
     // // TODO: hack
     // Cost startCost = m_env.nextTaskAssignment(start.tasks);
@@ -127,10 +127,9 @@ class ECBSTA {
         assert(initialStates[i] == solution[i].states.front().first);
         start.solution[i] = solution[i];
         std::cout << "use existing solution for agent: " << i << std::endl;
-      } else {
-        LowLevelEnvironment llenv(m_env, i, start.constraints[i],
-                                  start.task(i), start.solution);
-        LowLevelSearch_t lowLevel(m_env);
+      } else { 
+        LowLevelEnvironment llenv(m_env, i, start.constraints[i],start.taskGoalStates[std::to_string(i)], start.solution);
+        LowLevelSearch_t lowLevel(llenv);
         bool success = lowLevel.search(initialStates[i], start.solution[i]);
         if (!success) {
           return false;
@@ -286,7 +285,7 @@ class ECBSTA {
         newNode.LB -= newNode.solution[i].fmin;
 
         LowLevelEnvironment llenv(m_env, i, newNode.constraints[i],
-                                  newNode.task(i), newNode.solution);
+                                  newNode.taskGoalStates[std::to_string(i)], newNode.solution);
         LowLevelSearch_t lowLevel(m_env);
         bool success = lowLevel.search(initialStates[i], newNode.solution[i]);
 
@@ -317,7 +316,7 @@ class ECBSTA {
         // std::cout << "root node expanded; add new root" << std::endl;
         // for (size_t l = 0; l < 100; ++l) {
         HighLevelNode n;
-        m_env.nextTaskAssignment(n.tasks);
+        m_env.nextTaskAssignment(n.tasks, n.taskGoalStates);
 
         if (n.tasks.size() > 0) {
           n.solution.resize(numAgents);
@@ -329,7 +328,7 @@ class ECBSTA {
 
           bool allSuccessful = true;
           for (size_t i = 0; i < numAgents; ++i) {
-            LowLevelEnvironment llenv(m_env, i, n.constraints[i], n.task(i),
+            LowLevelEnvironment llenv(m_env, i, n.constraints[i], n.taskGoalStates[std::to_string(i)],
                                       n.solution);
             LowLevelSearch_t lowLevel(m_env);
             bool success = lowLevel.search(initialStates[i], n.solution[i]);
@@ -385,8 +384,8 @@ class ECBSTA {
   struct HighLevelNode {
     std::vector<PlanResult<State, Action, Cost> > solution;
     std::vector<Constraints> constraints;
-    std::map<size_t, Task> tasks; // maps from index to task (and does not contain an entry if no task was assigned)
-
+    std::map<std::string, std::string> tasks; // maps from index to task (and does not contain an entry if no task was assigned)
+    std::map<std::string, std::vector<State>> taskGoalStates; // maps from index to task (and does not contain an entry if no task was assigned)
     Cost cost;
     Cost LB;  // sum of fmin of solution
 
@@ -406,7 +405,7 @@ class ECBSTA {
     Task* task(size_t idx)
     {
       Task* task = nullptr;
-      auto iter = tasks.find(idx);
+      auto iter = tasks.find(std::to_string(idx));
       if (iter != tasks.end()) {
         task = &iter->second;
       }
@@ -509,8 +508,10 @@ class ECBSTA {
  private:
   
   float m_w;
-  typedef ml_AStar<State, Action, Cost, Environment>
+  typedef ml_AStar<State, Action, Cost, LowLevelEnvironment>
       LowLevelSearch_t;
 };
 
 }  // namespace libMultiRobotPlanning
+
+

@@ -27,22 +27,22 @@ struct Location {
 };
 
 struct State {
-  State() = default;
-  State(int time, int x, int y) : time(time), location(x, y) {}
-  int time;
-  Location location;
+  State(int time, int x, int y) : time(time), x(x), y(y) {}
 
-  bool operator<(const State& other) const {
-    return std::tie(time, location) < std::tie(other.time, other.location);
+  bool operator==(const State& s) const {
+    return time == s.time && x == s.x && y == s.y;
   }
 
-  bool operator==(const State& other) const {
-    return std::tie(time, location) == std::tie(other.time, other.location);
+  bool equalExceptTime(const State& s) const { return x == s.x && y == s.y; }
+
+  friend std::ostream& operator<<(std::ostream& os, const State& s) {
+    return os << s.time << ": (" << s.x << "," << s.y << ")";
+    // return os << "(" << s.x << "," << s.y << ")";
   }
 
-  friend std::ostream& operator<<(std::ostream& os, const State& c) {
-    return os << "(" << c.time << "," << c.location << ")";
-  }
+  int time ;
+  int x;
+  int y;
 };
 
 namespace std {
@@ -55,9 +55,22 @@ struct hash<Location> {
     return seed;
   }
 };
+
+template <>
+struct hash<State> {
+  size_t operator()(const State& s) const {
+    size_t seed = 0;
+    boost::hash_combine(seed, s.time);
+    boost::hash_combine(seed, s.x);
+    boost::hash_combine(seed, s.y);
+    return seed;
+  }
+};
+
+
 }  // namespace std
 #include "shortest_path_heuristic.hpp"
-typedef std::unordered_map<std::string, std::vector<std::vector<int>>> t_map;
+typedef std::map<std::string, std::vector<std::vector<int>>> t_map;
   
 t_map createMultiGoalCostMatrix(std::string inputFile, NextBestAssignment<std::string, std::string> &assignment){
   YAML::Node config = YAML::LoadFile(inputFile);
@@ -91,11 +104,21 @@ t_map createMultiGoalCostMatrix(std::string inputFile, NextBestAssignment<std::s
 
       
       std::vector<int> goal_last_element = goal.as<std::vector<std::vector<int>>>().back();
-      int cost = m_heuristic.getValue(startStates[agent_id].location, Location(goal_last_element[0], goal_last_element[1]));
+      int cost = m_heuristic.getValue(Location(startStates[agent_id].x,startStates[agent_id].y), Location(goal_last_element[0], goal_last_element[1]));
       assignment.setCost(std::to_string(agent_id), std::to_string(task_id), cost);
       task_id++;
     }
     agent_id++;
+  }
+
+    // sanity check: no identical start states
+  std::unordered_set<State> startStatesSet;
+  for (const auto& s : startStates) {
+    if (startStatesSet.find(s) != startStatesSet.end()) {
+      std::cout << "Identical start states detected -> no solution!" << std::endl;
+      return {};
+    }
+    startStatesSet.insert(s);
   }
 
   return task_definition; 
@@ -163,6 +186,7 @@ int main(int argc, char* argv[]) {
   NextBestAssignment<std::string, std::string> assignment;
   t_map task_definition = createMultiGoalCostMatrix(inputFile, assignment);
   assignment.solve(task_definition);
+  assignment.nextSolution(solution, task_definition);
 
   std::ofstream out(outputFile);
   out << "solutions:" << std::endl;

@@ -29,6 +29,30 @@ Stockholm, Sweden, July 2018.
 \tparam Agent Type of the agent. Needs to be copy'able and comparable
 \tparam Task Type of task. Needs to be copy'able and comparable
 */
+
+
+struct State {
+  State() = default;
+  State(int time, int x, int y) : time(time), x(x), y(y) {}
+
+  bool operator==(const State& s) const {
+    return time == s.time && x == s.x && y == s.y;
+  }
+
+  bool equalExceptTime(const State& s) const { return x == s.x && y == s.y; }
+
+  friend std::ostream& operator<<(std::ostream& os, const State& s) {
+    return os << s.time << ": (" << s.x << "," << s.y << ")";
+    // return os << "(" << s.x << "," << s.y << ")";
+  }
+
+  int time ;
+  int x;
+  int y;
+};
+
+
+
 template <typename Agent, typename Task, typename Assignment = Assignment<Agent, Task> >
 class NextBestAssignment {
  public:
@@ -55,17 +79,25 @@ class NextBestAssignment {
     m_numMatching = numMatching(n.solution);
   }
 
-  void printTasks(std::string task_id, std::unordered_map<std::string, std::vector<std::vector<int>>> task_definition){
+  void printTasks(std::map<std::string, std::vector<State>> agent_goals_map){
 
-    std::cout << "Task " << task_id  << " goals: "<< std::endl;
-    int num_goals = task_definition[task_id].size();
-
-    for (int i=0 ;i < num_goals; i++)
-      std::cout << "( " << task_definition[task_id][i][0] << ", " << task_definition[task_id][i][1] << " )" << std::endl;
+    for (auto it = agent_goals_map.begin(); it != agent_goals_map.end(); ++it) {
+      std::cout << "Agent " << it->first  << " goals: "<< std::endl;
+      for (int i=0; i<it->second.size(); i++)
+        std::cout << "( " << it->second[i].x << ", " << it->second[i].y << " )" << std::endl;
+    }
     return;
   }
 
-  void solve(std::unordered_map<std::string, std::vector<std::vector<int>>> task_definition){
+  void printStates(std::string task_id, std::vector<State> state_vector){
+    std::cout << "Task " << task_id  << " goals: "<< std::endl;
+
+    for (int i=0; i<state_vector.size(); i++)
+      std::cout << "( " << state_vector[i].x << ", " << state_vector[i].y << " )" << std::endl;
+    return;
+  }
+
+  void solve(std::map<std::string, std::vector<std::vector<int>>> task_definition){
     const std::set<std::pair<Agent, Task> > I, O;
     const std::set<Agent> Iagents, Oagents;
     Node n;
@@ -74,10 +106,8 @@ class NextBestAssignment {
     m_numMatching = numMatching(n.solution);
 
     // std::cout << "constrainedMatching: internal Solution: " << std::endl;
-    for(const auto& c : n.solution) {
-      std::cout << "Agent ID: " << c.first << std::endl;
-      printTasks(c.second, task_definition);
-    }
+    std::map<std::string, std::vector<State>> agent_goal_map = taskToGoals(n.solution, task_definition);
+    printTasks(agent_goal_map);
   }
 
   // find next solution
@@ -140,6 +170,101 @@ class NextBestAssignment {
           m_open.push(n);
           // std::cout << "add: " << n << std::endl;
         }
+      }
+    }
+
+
+
+    return result;
+  }
+
+  std::map<std::string, std::vector<State>> taskToGoals(std::map<Agent, Task> task_map, std::map<std::string, std::vector<std::vector<int>>> task_definition){
+    
+    std::map<std::string, std::vector<State>> agent_goals_map;
+    for(auto it = task_map.begin(); it != task_map.end(); ++it){
+      std::string task_id = it->second;
+      std::vector<std::vector<int>> task_goals = task_definition[task_id];
+      std::vector<State> state_vector;
+      for (int i=0; i<task_goals.size(); i++){
+        State state;
+        state.x = task_goals[i][0];
+        state.y = task_goals[i][1];
+        state_vector.push_back(state);
+      }
+      agent_goals_map.insert(std::make_pair(it->first, state_vector));
+    }
+
+    return agent_goals_map;
+  }
+
+  // find next solution
+  long nextSolution(std::map<Agent, Task>& solution, std::map<std::string, std::vector<std::vector<int>>> task_definition) {
+    solution.clear();
+    if (m_open.empty()) {
+      return std::numeric_limits<long>::max();
+    }
+
+    const Node next = m_open.top();
+    // std::cout << "next: " << next << std::endl;
+    m_open.pop();
+    for (const auto& entry : next.solution) {
+      solution.insert(std::make_pair(entry.first, entry.second));
+    }
+    long result = next.cost;
+
+    std::set<Agent> fixedAgents;
+    for (const auto c : next.I) {
+      fixedAgents.insert(c.first);
+    }
+
+    // prepare for next query
+    for (size_t i = 0; i < m_agentsVec.size(); ++i) {
+      if (fixedAgents.find(m_agentsVec[i]) == fixedAgents.end()) {
+        Node n;
+        n.I = next.I;
+        n.O = next.O;
+        n.Iagents = next.Iagents;
+        n.Oagents = next.Oagents;
+        // fix assignment for agents 0...i
+        for (size_t j = 0; j < i; ++j) {
+          const Agent& agent = m_agentsVec[j];
+          // n.I.insert(std::make_pair<>(agent, next.solution.at(agent)));
+          const auto iter = solution.find(agent);
+          if (iter != solution.end()) {
+            n.I.insert(std::make_pair<>(agent, iter->second));
+          } else {
+            // this agent should keep having no solution =>
+            // enforce that no task is allowed
+            n.Oagents.insert(agent);
+            // for (const auto& task : m_tasksSet) {
+            //   n.O.insert(std::make_pair<>(agent, task));
+            // }
+          }
+        }
+        // n.O.insert(
+        //     std::make_pair<>(m_agentsVec[i], next.solution.at(m_agentsVec[i])));
+        const auto iter = solution.find(m_agentsVec[i]);
+        if (iter != solution.end()) {
+          n.O.insert(std::make_pair<>(m_agentsVec[i], iter->second));
+        } else {
+          // this agent should have a solution next
+          // std::cout << "should have sol: " << m_agentsVec[i] << std::endl;
+          n.Iagents.insert(m_agentsVec[i]);
+        }
+        // std::cout << " consider adding: " << n << std::endl;
+        n.cost = constrainedMatching(n.I, n.O, n.Iagents, n.Oagents, n.solution);
+        if (n.solution.size() > 0) {
+          m_open.push(n);
+          // std::cout << "add: " << n << std::endl;
+        }
+
+        std::map<std::string, std::vector<State>> agent_goal_map = taskToGoals(n.solution, task_definition);
+        printTasks(agent_goal_map);
+
+        // for(const auto& c : n.solution) {
+        //   std::cout << "Agent ID: " << c.first << std::endl;
+        //   printTasks(c.second, task_definition);
+        // }
       }
     }
 
