@@ -6,7 +6,7 @@
 
 // #include <libMultiRobotPlanning/a_star.hpp>
 #include <libMultiRobotPlanning/ml_a_star.hpp>
-
+#include <assert.h> 
 // using libMultiRobotPlanning::ml_AStar;
 using libMultiRobotPlanning::ml_AStar;
 using libMultiRobotPlanning::Neighbor;
@@ -97,7 +97,10 @@ class Environment {
   }
   
 
-  bool isSolution(const State& s) { return s == m_goals[m_goal_label]; }
+  bool isSolution(const State& s, int goal_label) { 
+    assert(m_goal_label == goal_label);
+    return s == m_goals[m_goal_label]; 
+  }
 
   void getNeighbors(const State& s,
                     std::vector<Neighbor<State, Action, int> >& neighbors) {
@@ -206,6 +209,9 @@ int main(int argc, char* argv[]) {
   goals.push_back(goal1);
   goals.push_back(goal2);
   State start(startX, startY);
+
+  // Environment mapf(dimx, dimy, obstacles, startStates, goals,
+  //                  maxTaskAssignments);
   Environment env(dimX, y - 1, obstacles, goals, goals.size());
 
   ml_AStar<State, Action, int, Environment> ml_astar(env);
