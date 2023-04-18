@@ -98,7 +98,7 @@ class Environment {
   
 
   bool isSolution(const State& s, int goal_label) { 
-    assert(m_goal_label == goal_label);
+    // assert(m_goal_label == goal_label);
     return s == m_goals[m_goal_label]; 
   }
 
@@ -153,16 +153,16 @@ int main(int argc, char* argv[]) {
   std::string mapFile;
   std::string outputFile;
   desc.add_options()("help", "produce help message")(
-      "startX", po::value<int>(&startX)->required(),
+      "startX", po::value<int>(&startX)->default_value(0),
       "start position x-component")("startY",
-                                    po::value<int>(&startY)->required(),
+                                    po::value<int>(&startY)->default_value(0),
                                     "start position y-component")(
-      "goalX1", po::value<int>(&goalX1)->required(), "goal position 1 x-component")(
-      "goalY1", po::value<int>(&goalY1)->required(), "goal position 1 y-component")(
-      "goalX2", po::value<int>(&goalX2)->required(), "goal position 2 x-component")(
-      "goalY2", po::value<int>(&goalY2)->required(), "goal position 2 y-component")(
-      "map,m", po::value<std::string>(&mapFile)->required(), "input map (txt)")(
-      "output,o", po::value<std::string>(&outputFile)->required(),
+      "goalX1", po::value<int>(&goalX1)->default_value(4), "goal position 1 x-component")(
+      "goalY1", po::value<int>(&goalY1)->default_value(0), "goal position 1 y-component")(
+      "goalX2", po::value<int>(&goalX2)->default_value(2), "goal position 2 x-component")(
+      "goalY2", po::value<int>(&goalY2)->default_value(1), "goal position 2 y-component")(
+      "map,m", po::value<std::string>(&mapFile)->default_value("../benchmark/custom/mapfta1.yaml"), "input map (txt)")(
+      "output,o", po::value<std::string>(&outputFile)->default_value("../benchmark/custom/output.yaml"),
       "output file (YAML)");
 
   try {

@@ -119,7 +119,7 @@ purposes.
             // std::cout<<"reached a goal location! \n";
             current.goal_label +=1;
             m_env.m_goal_label +=1;
-            if(current.goal_label>=m_env.m_num_of_goals-1) {
+            if(m_env.m_goal_label==(m_env.m_num_of_goals)) {
               // std::cout<<"solution found!"<<std::endl;
               solution.states.clear();
               solution.actions.clear();
