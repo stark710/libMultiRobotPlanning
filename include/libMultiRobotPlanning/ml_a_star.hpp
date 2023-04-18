@@ -73,9 +73,11 @@ purposes.
         std::unordered_set<State, StateHasher> closedSet;
         std::unordered_map<State, std::tuple<State, Action, Cost, Cost>, StateHasherNew> cameFrom;
         // dont hardcode goal label
+        State rootState = startState;
+        rootState.label = 0;
         auto handle = openSet.push(
-            Node(startState, m_env.admissibleHeuristic(startState), initialCost, 0));
-        stateToHeap.insert(std::make_pair<>(startState, handle));
+            Node(rootState, m_env.admissibleHeuristic(rootState), initialCost, 0));
+        stateToHeap.insert(std::make_pair<>(rootState, handle));
         (*handle).handle = handle;
 
         std::vector<Neighbor<State, Action, Cost> > neighbors;
@@ -147,7 +149,6 @@ purposes.
           }
           for (Neighbor<State, Action, Cost>& neighbor : neighbors) {
             if (closedSet.find(neighbor.state) == closedSet.end()) {
-              neighbor.state.label = current.state.label;
               Cost tentative_gScore = current.gScore + neighbor.cost;
               auto iter = stateToHeap.find(neighbor.state);
               if (iter == stateToHeap.end()) {  // Discover a new node

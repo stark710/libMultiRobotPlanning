@@ -429,7 +429,7 @@ class Environment {
       std::cout << "Goal: " << s.x << ", " << s.y << " at time: " << s.time << std::endl;
     }
 
-    return atGoal && s.time > m_lastGoalConstraint;
+    return atGoal && s.time > m_lastGoalConstraint && current_goal_label == env_goal_label;
   }
 
   // bool isSolution(const State& s) { return s == m_goals[m_goal_label]; }
