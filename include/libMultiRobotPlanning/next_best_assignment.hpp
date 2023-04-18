@@ -35,6 +35,7 @@ struct State {
   State() = default;
   State(int time, int x, int y) : time(time), x(x), y(y) {}
 
+
   bool operator==(const State& s) const {
     return time == s.time && x == s.x && y == s.y;
   }

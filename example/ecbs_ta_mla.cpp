@@ -18,6 +18,7 @@ using libMultiRobotPlanning::NextBestAssignment;
 struct State {
   State() = default;
   State(int time, int x, int y) : time(time), x(x), y(y) {}
+  State(int time, int x, int y, int label) : time(time), x(x), y(y), label(label) {}
 
   bool operator==(const State& s) const {
     return time == s.time && x == s.x && y == s.y;
@@ -33,6 +34,8 @@ struct State {
   int time ;
   int x;
   int y;
+  int label;
+  
 };
 
 namespace std {
@@ -46,6 +49,18 @@ struct hash<State> {
     return seed;
   }
 };
+
+  struct StateHasher2 {
+      std::size_t operator()(const State& state) const {
+        std::size_t seed = 0;
+        boost::hash_combine(seed, state.x);
+        boost::hash_combine(seed, state.y);
+        boost::hash_combine(seed, state.label);
+        return seed;
+      }
+    };
+
+
 }  // namespace std
 
 ///
@@ -405,12 +420,12 @@ class Environment {
     return h;
   }
 
-  bool isSolution(const State& s, int goal_label) {
+  bool isSolution(const State& s, int current_goal_label, int env_goal_label) {
     bool atGoal = true;
-    State current_goal = m_goals[goal_label];
+    State current_goal = m_goals[env_goal_label];
 
-      atGoal = s.x == current_goal.x && s.y == current_goal.y;
-    if(atGoal && s.time > m_lastGoalConstraint) {
+    atGoal = s.x == current_goal.x && s.y == current_goal.y;
+    if(atGoal && s.time > m_lastGoalConstraint && current_goal_label == env_goal_label) {
       std::cout << "Goal: " << s.x << ", " << s.y << " at time: " << s.time << std::endl;
     }
 
@@ -419,29 +434,34 @@ class Environment {
 
   // bool isSolution(const State& s) { return s == m_goals[m_goal_label]; }
   void getNeighbors(const State& s,
-                    std::vector<Neighbor<State, Action, int> >& neighbors) {
+                    std::vector<Neighbor<State, Action, int> >& neighbors, bool reachedGoal) {
     neighbors.clear();
-
-    State up(s.time+1, s.x, s.y + 1);
+    int new_label = s.label;
+    if(reachedGoal) {
+      new_label++;
+    }
+    State up(s.time+1, s.x, s.y + 1, new_label);
     if (stateValid(up)) {
       neighbors.emplace_back(Neighbor<State, Action, int>(up, Action::Up, 1));
     }
-    State down(s.time+1, s.x, s.y - 1);
+    State down(s.time+1, s.x, s.y - 1, new_label);
     if (stateValid(down)) {
       neighbors.emplace_back(
           Neighbor<State, Action, int>(down, Action::Down, 1));
     }
-    State left(s.time+1, s.x - 1, s.y);
+    State left(s.time+1, s.x - 1, s.y, new_label);
     if (stateValid(left)) {
       neighbors.emplace_back(
           Neighbor<State, Action, int>(left, Action::Left, 1));
     }
-    State right(s.time+1, s.x + 1, s.y);
+    State right(s.time+1, s.x + 1, s.y, new_label);
     if (stateValid(right)) {
       neighbors.emplace_back(
           Neighbor<State, Action, int>(right, Action::Right, 1));
     }
   }
+
+  
 
   // void getNeighbors(const State& s,
   //                   std::vector<Neighbor<State, Action, int> >& neighbors) {

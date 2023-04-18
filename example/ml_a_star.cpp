@@ -13,7 +13,7 @@ using libMultiRobotPlanning::Neighbor;
 using libMultiRobotPlanning::PlanResult;
 
 struct State {
-  State(int x, int y) : x(x), y(y) {}
+  State(int x, int y, int label) : x(x), y(y) {}
 
   State(const State&) = default;
   State(State&&) = default;

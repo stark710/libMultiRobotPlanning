@@ -477,11 +477,11 @@ class ECBSTA {
                                             m_solution);
     }
 
-    bool isSolution(const State& s, int goal_label) { return m_env.isSolution(s, goal_label); }
+    bool isSolution(const State& s, int current_goal_label, int env_goal_label) { return m_env.isSolution(s, current_goal_label, env_goal_label); }
 
     void getNeighbors(const State& s,
-                      std::vector<Neighbor<State, Action, Cost> >& neighbors) {
-      m_env.getNeighbors(s, neighbors);
+                      std::vector<Neighbor<State, Action, Cost> >& neighbors, bool reachedGoal) {
+      m_env.getNeighbors(s, neighbors, reachedGoal);
     }
 
     void onExpandNode(const State& s, Cost fScore, Cost gScore) {

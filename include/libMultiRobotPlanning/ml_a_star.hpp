@@ -71,9 +71,7 @@ purposes.
         openSet_t openSet;
         std::unordered_map<State, fibHeapHandle_t, StateHasher> stateToHeap;
         std::unordered_set<State, StateHasher> closedSet;
-        std::unordered_map<State, std::tuple<State, Action, Cost, Cost>,
-                          StateHasher>
-            cameFrom;
+        std::unordered_map<State, std::tuple<State, Action, Cost, Cost>, StateHasherNew> cameFrom;
         // dont hardcode goal label
         auto handle = openSet.push(
             Node(startState, m_env.admissibleHeuristic(startState), initialCost, 0));
@@ -111,13 +109,13 @@ purposes.
           stateToHeap.erase(current.state);
           closedSet.insert(current.state);
           // std::cout<<"current node location: "<<current.state.x<<","<<current.state.y<<std::endl;
-          // std::cout<<"current goal label before condition check: "<<current.goal_label<<std::endl;
+          // std::cout<<"current goal label before condition check: "<<current.state.label<<std::endl;
           // std::cout<<"m_env.m_goal_label before condition check: "<<m_env.m_goal_label<<std::endl;
           //print current node location and label
   
-          if(m_env.isSolution(current.state, current.goal_label)) { 
+          if(m_env.isSolution(current.state, current.state.label, m_env.m_goal_label)) { 
             // std::cout<<"reached a goal location! \n";
-            current.goal_label +=1;
+            reachedGoal = true;
             m_env.m_goal_label +=1;
             if(m_env.m_goal_label==(m_env.m_num_of_goals)) {
               // std::cout<<"solution found!"<<std::endl;
@@ -142,14 +140,19 @@ purposes.
 
 // traverse neighbors
           neighbors.clear();
-          m_env.getNeighbors(current.state, neighbors);
-          for (const Neighbor<State, Action, Cost>& neighbor : neighbors) {
+          m_env.getNeighbors(current.state, neighbors, reachedGoal);
+
+          if(reachedGoal){
+            reachedGoal = false;
+          }
+          for (Neighbor<State, Action, Cost>& neighbor : neighbors) {
             if (closedSet.find(neighbor.state) == closedSet.end()) {
+              neighbor.state.label = current.state.label;
               Cost tentative_gScore = current.gScore + neighbor.cost;
               auto iter = stateToHeap.find(neighbor.state);
               if (iter == stateToHeap.end()) {  // Discover a new node
                 Cost fScore = tentative_gScore + m_env.admissibleHeuristic(neighbor.state);
-                auto handle = openSet.push(Node(neighbor.state, fScore, tentative_gScore, current.goal_label));
+                auto handle = openSet.push(Node(neighbor.state, fScore, tentative_gScore, current.state.label));
                 (*handle).handle = handle;
                 stateToHeap.insert(std::make_pair<>(neighbor.state, handle));
                 // m_env.onDiscover(neighbor.state, fScore, tentative_gScore);
@@ -181,6 +184,8 @@ purposes.
                   neighbor.state,
                   std::make_tuple<>(current.state, neighbor.action, neighbor.cost,
                                     tentative_gScore)));
+
+              
             }
           }
         }
@@ -190,6 +195,17 @@ purposes.
     
 
     private:
+
+      struct StateHasherNew {
+        std::size_t operator()(const State& state) const {
+          std::size_t seed = 0;
+          boost::hash_combine(seed, state.x);
+          boost::hash_combine(seed, state.y);
+          boost::hash_combine(seed, state.label);
+          return seed;
+        }
+      };
+
       struct Node {
         Node(const State& state, Cost fScore, Cost gScore, int label = 0)
             : state(state), fScore(fScore), gScore(gScore), goal_label(label) {}
@@ -239,6 +255,7 @@ purposes.
     #endif
 
     private:
+      bool reachedGoal = false;
       Environment& m_env;
     
   };
