@@ -6,7 +6,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <libMultiRobotPlanning/ecbs_ta_mla.hpp>
+#include <libMultiRobotPlanning/ecbs_ta_mla_timewindow.hpp>
 #include <libMultiRobotPlanning/next_best_assignment.hpp>
 #include "timer.hpp"
 
@@ -275,7 +275,7 @@ class Environment {
               const std::vector<std::unordered_set<Location> >& goals,
               size_t maxTaskAssignments,
               NextBestAssignment<std::string, std::string> assignment,
-              t_map task_definition)
+              t_map task_definition, t_map task_time_definition)
       : m_dimx(dimx),
         m_dimy(dimy),
         m_obstacles(obstacles),
@@ -289,18 +289,31 @@ class Environment {
         m_lowLevelExpanded(0),
         m_heuristic(dimx, dimy, obstacles),
         m_assignment(assignment),
-        m_task_definition(task_definition) {
+        m_task_definition(task_definition),
+        m_task_time_definition(task_time_definition){
     
   std::map<std::string, std::string> solution;
   m_assignment.solve(task_definition);
   std::cout << " Found initial solution!" << std::endl;
   }
 
+  void goalTimesMapping(){
+
+    // Iterate through m_goals and m_goal_times and create a map
+    for (int i = 0; i < int(m_goals.size()); i++){
+      m_goal_times_map[m_goals[i]] = m_goal_times[i];
+    }
+    
+  }
+
   void setLowLevelContext(size_t agentIdx, const Constraints* constraints,
-                          std::map<std::string, std::vector<State>> agent_goals_map) {
+                          std::map<std::string, std::vector<State>> agent_goals_map,
+                          std::map<std::string, std::vector<std::vector<int>>> agent_goals_time_map) {
     assert(constraints);
     m_agentIdx = agentIdx;
     m_goals = agent_goals_map[std::to_string(m_agentIdx)];
+    m_goal_times = agent_goals_time_map[std::to_string(m_agentIdx)];
+    goalTimesMapping();
     m_goal_label = 0;
     m_num_of_goals = m_goals.size();
     m_constraints = constraints;
@@ -423,14 +436,18 @@ class Environment {
   bool isSolution(const State& s, int current_goal_label, int env_goal_label) {
     bool atGoal = true;
     State current_goal = m_goals[env_goal_label];
-
-    atGoal = s.x == current_goal.x && s.y == current_goal.y;
+    std::vector<int> current_goal_time = m_goal_times_map[current_goal];
+    int release_time = current_goal_time[0];
+    int deadline = current_goal_time[1];
+    atGoal = s.x == current_goal.x && s.y == current_goal.y && s.time >= release_time && s.time <= deadline;
     if(atGoal && s.time > m_lastGoalConstraint && current_goal_label == env_goal_label) {
       std::cout << "Goal: " << s.x << ", " << s.y << " at time: " << s.time << std::endl;
     }
 
     return atGoal && s.time > m_lastGoalConstraint && current_goal_label == env_goal_label;
   }
+
+
 
   // bool isSolution(const State& s) { return s == m_goals[m_goal_label]; }
   void getNeighbors(const State& s,
@@ -587,11 +604,12 @@ class Environment {
   std::map<std::string, std::vector<State>> taskToGoals(std::map<std::string, std::string> agent_task_map){
     
     std::map<std::string, std::vector<State>> agent_goals_map;
+
     for(auto it = agent_task_map.begin(); it != agent_task_map.end(); ++it){
       std::string task_id = it->second;
       std::vector<std::vector<int>> task_goals = m_task_definition[task_id];
       std::vector<State> state_vector;
-      for (int i=0; i<task_goals.size(); i++){
+      for (int i=0; i<int(task_goals.size()); i++){
         State state;
         state.x = task_goals[i][0];
         state.y = task_goals[i][1];
@@ -602,17 +620,32 @@ class Environment {
     }
 
     return agent_goals_map;
-    
+  }
+
+
+  std::map<std::string, std::vector<std::vector<int>>> taskToGoalTimes(std::map<std::string, std::string> agent_task_map){
+
+    std::map<std::string, std::vector<std::vector<int>>> agent_goal_times_map;
+
+    for(auto it = agent_task_map.begin(); it != agent_task_map.end(); ++it){
+      std::string task_id = it->second;
+      std::vector<std::vector<int>> task_goal_times = m_task_time_definition[task_id];
+  
+      agent_goal_times_map.insert(std::make_pair(it->first, task_goal_times));
+    }
+
+    return agent_goal_times_map;
   }
 
   void nextTaskAssignment(std::map<std::string, std::string> tasks, 
-  std::map<std::string, std::vector<State>> &agent_goals_map) {
+  std::map<std::string, std::vector<State>> &agent_goals_map, std::map<std::string, std::vector<std::vector<int>>> &agent_goal_times_map) {
     if (m_numTaskAssignments > m_maxTaskAssignments) {
       return;
     }
 
     int64_t cost = m_assignment.nextSolution(tasks, m_task_definition);
     agent_goals_map = taskToGoals(tasks);
+    agent_goal_times_map = taskToGoalTimes(tasks);
 
     if (!tasks.empty()) {
       std::cout << "nextTaskAssignment: cost: " << cost << std::endl;
@@ -652,6 +685,7 @@ class Environment {
   bool stateValid(const State& s) {
     assert(m_constraints);
     const auto& con = m_constraints->vertexConstraints;
+
     return s.x >= 0 && s.x < m_dimx && s.y >= 0 && s.y < m_dimy &&
            m_obstacles.find(Location(s.x, s.y)) == m_obstacles.end() &&
            con.find(VertexConstraint(s.time, s.x, s.y)) == con.end();
@@ -676,6 +710,7 @@ class Environment {
   std::map<std::string, std::string> solution;
   NextBestAssignment<std::string, std::string> m_assignment;
   t_map m_task_definition;
+  t_map m_task_time_definition;
   size_t m_maxTaskAssignments;
   size_t m_numTaskAssignments;
   int m_highLevelExpanded;
@@ -684,6 +719,8 @@ class Environment {
   size_t m_numAgents;
   // std::unordered_set<Location> m_goals;
   std::vector<State> m_goals;
+  std::vector<std::vector<int>> m_goal_times; 
+  std::unordered_map<State, std::vector<int>> m_goal_times_map;
 };
 
 int main(int argc, char* argv[]) {
@@ -701,7 +738,7 @@ int main(int argc, char* argv[]) {
       "input,i", po::value<std::string>(&inputFile)->default_value("../benchmark/custom/mapfta3.yaml"),
       "input file (YAML)")("output,o",
                            po::value<std::string>(&outputFile)->default_value(
-                               "output_ecbsta3.yaml"),
+                               "output_ecbsta.yaml"),
                            "output file (YAML)")(
       "suboptimality,w", po::value<float>(&w)->default_value(1.0),
       "suboptimality bound")(
@@ -727,9 +764,11 @@ int main(int argc, char* argv[]) {
   YAML::Node config = YAML::LoadFile(inputFile);
   NextBestAssignment<std::string, std::string> assignment;
   std::unordered_set<Location> obstacles;
-  std::vector<std::unordered_set<Location> > goals;
+  std::vector<std::unordered_set<Location>> goals;
   std::vector<State> startStates;
   t_map task_definition; 
+  t_map task_time_definition;
+
   
   const auto& dim = config["map"]["dimensions"];
   int dimx = dim[0].as<int>();
@@ -748,16 +787,44 @@ int main(int argc, char* argv[]) {
     startStates.emplace_back(State(0, start[0].as<int>(), start[1].as<int>()));
     goals.resize(goals.size() + 1);
     task_id = 0;
-    for (const auto& goal : node["potentialGoals"]) {
-
+    for (int i=0; i<int(node["potentialGoals"].size()); i++) {
+      
+      const auto& goal = node["potentialGoals"][i];
+      const auto& time_window = node["goalTimeWindows"][i];
       std::vector<std::vector<int>> all_goals = goal.as<std::vector<std::vector<int>>>();
+      std::vector<std::vector<int>> all_time_windows = time_window.as<std::vector<std::vector<int>>>();
+      int num_goals = all_goals.size();
+      
       task_definition[std::to_string(task_id)] = all_goals;
+      task_time_definition[std::to_string(task_id)] = all_time_windows;
 
       
       std::vector<int> goal_last_element = goal.as<std::vector<std::vector<int>>>().back();
-      int cost = m_heuristic.getValue(Location(startStates[agent_id].x,startStates[agent_id].y), Location(goal_last_element[0], goal_last_element[1]));
-      
-      assignment.setCost(std::to_string(agent_id), std::to_string(task_id), cost);
+      // Find sum of costs to all goals 
+      int sum_cost = 0;
+      int curr_cost = 0;
+      sum_cost = m_heuristic.getValue(Location(startStates[agent_id].x,startStates[agent_id].y), Location(all_goals[0][0], all_goals[0][1]));
+
+      for (int j=1; j<int(all_goals.size()); j++){
+
+          int prev_goal_x = all_goals[j-1][0];
+          int prev_goal_y = all_goals[j-1][1];
+          int curr_goal_x = all_goals[j][0];
+          int curr_goal_y = all_goals[j][1];
+          curr_cost = m_heuristic.getValue(Location(prev_goal_x, prev_goal_y), Location(curr_goal_x, curr_goal_y));
+          sum_cost += curr_cost;
+      }
+
+      // If the sum of costs is less than the time window, then the agent can reach all goals in time
+      int last_goal_deadline = all_time_windows[num_goals-1][1];
+      if (sum_cost < last_goal_deadline){
+        assignment.setCost(std::to_string(agent_id), std::to_string(task_id), sum_cost);
+      }
+
+      // If the sum of costs is greater than the time window, then the agent cannot reach all goals in time
+      else{
+        assignment.setCost(std::to_string(agent_id), std::to_string(task_id), 1000000);
+      }
       task_id++;
     }
     agent_id++;
@@ -775,7 +842,7 @@ int main(int argc, char* argv[]) {
   }
 
   Environment mapf(dimx, dimy, obstacles, startStates, goals,
-                   maxTaskAssignments, assignment, task_definition);
+                   maxTaskAssignments, assignment, task_definition, task_time_definition);
 
 
   ECBSTA<State, Action, int, Conflict, Constraints, Location,
