@@ -602,6 +602,7 @@ class Environment {
     }
 
     return agent_goals_map;
+    
   }
 
   void nextTaskAssignment(std::map<std::string, std::string> tasks, 
@@ -697,10 +698,10 @@ int main(int argc, char* argv[]) {
   // Added ../benchmark/custom/mapfta1.yaml as a default input file
 
   desc.add_options()("help", "produce help message")(
-      "input,i", po::value<std::string>(&inputFile)->default_value("../benchmark/custom/mapfta1.yaml"),
+      "input,i", po::value<std::string>(&inputFile)->default_value("../benchmark/custom/mapfta3.yaml"),
       "input file (YAML)")("output,o",
                            po::value<std::string>(&outputFile)->default_value(
-                               "output_ecbsta.yaml"),
+                               "output_ecbsta3.yaml"),
                            "output file (YAML)")(
       "suboptimality,w", po::value<float>(&w)->default_value(1.0),
       "suboptimality bound")(

@@ -11,7 +11,6 @@
 #include "neighbor.hpp"
 #include "planresult.hpp"
 
-
 namespace libMultiRobotPlanning {
 
 /*!
@@ -61,16 +60,15 @@ purposes.
   public:
     ml_AStar(Environment& environment) : m_env(environment) {}
 
-      bool search(const State& startState,
-                  PlanResult<State, Action, Cost>& solution, Cost initialCost = 0) {
+      bool search(const State& startState, PlanResult<State, Action, Cost>& solution, Cost initialCost = 0) {
         solution.states.clear();
         solution.states.push_back(std::make_pair<>(startState, 0));
         solution.actions.clear();
         solution.cost = 0;
 
         openSet_t openSet;
-        std::unordered_map<State, fibHeapHandle_t, StateHasher> stateToHeap;
-        std::unordered_set<State, StateHasher> closedSet;
+        std::unordered_map<State, fibHeapHandle_t, StateHasherNew> stateToHeap;
+        std::unordered_set<State, StateHasherNew> closedSet;
         std::unordered_map<State, std::tuple<State, Action, Cost, Cost>, StateHasherNew> cameFrom;
         // dont hardcode goal label
         State rootState = startState;
@@ -144,7 +142,9 @@ purposes.
           neighbors.clear();
           m_env.getNeighbors(current.state, neighbors, reachedGoal);
 
-          if(reachedGoal){
+          if(reachedGoal) {   
+            int curr_label = current.state.label+1;
+            openSet.clear();
             reachedGoal = false;
           }
           for (Neighbor<State, Action, Cost>& neighbor : neighbors) {
@@ -176,7 +176,6 @@ purposes.
                 // m_env.onDiscover(neighbor.state, (*handle).fScore,
                                 // (*handle).gScore);
               }
-
               // Best path for this node so far
               // TODO: this is not the best way to update "cameFrom", but otherwise
               // default c'tors of State and Action are required
@@ -184,17 +183,13 @@ purposes.
               cameFrom.insert(std::make_pair<>(
                   neighbor.state,
                   std::make_tuple<>(current.state, neighbor.action, neighbor.cost,
-                                    tentative_gScore)));
-
-              
+                                    tentative_gScore)));      
             }
           }
         }
-
         return false;
       }
     
-
     private:
 
       struct StateHasherNew {
