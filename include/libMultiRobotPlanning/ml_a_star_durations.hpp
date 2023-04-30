@@ -112,8 +112,8 @@ purposes.
           // std::cout<<"current goal label before condition check: "<<current.state.label<<std::endl;
           // std::cout<<"m_env.m_goal_label before condition check: "<<m_env.m_goal_label<<std::endl;
           //print current node location and label
-          
-          if(m_env.isSolution(current.state, current.state.label, m_env.m_goal_label)) { 
+          std::pair<bool,bool> proceed_to_next_label = m_env.isSolutionDurations(current.state, current.state.label, m_env.m_goal_label);
+          if(proceed_to_next_label.first && !proceed_to_next_label.second) { 
             // std::cout<<"reached a goal location! \n";
             reachedGoal = true;
             m_env.m_goal_label +=1;
@@ -140,9 +140,9 @@ purposes.
 
 // traverse neighbors
           neighbors.clear();
-          m_env.getNeighborsDurations(current.state, neighbors, reachedGoal);
+          m_env.getNeighborsWithDurations(current.state, neighbors, proceed_to_next_label.first, proceed_to_next_label.second);
 
-          if(reachedGoal) {   
+          if(proceed_to_next_label.first && !proceed_to_next_label.second) {   
             int curr_label = current.state.label+1;
             openSet.clear();
             reachedGoal = false;
@@ -252,6 +252,7 @@ purposes.
 
     private:
       bool reachedGoal = false;
+      bool withinDuration = false;
       Environment& m_env;
     
   };

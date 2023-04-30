@@ -136,6 +136,7 @@ std::vector<t_map> createMultiGoalTimedCostMatrix(std::string inputFile, NextBes
   t_map task_definition; 
   t_map task_time_window_definition;
   
+  
   const auto& dim = config["map"]["dimensions"];
   int dimx = dim[0].as<int>();
   int dimy = dim[1].as<int>();
@@ -159,18 +160,23 @@ std::vector<t_map> createMultiGoalTimedCostMatrix(std::string inputFile, NextBes
 
       const auto& goal = node["potentialGoals"][i];
       const auto& time_window = node["goalTimeWindows"][i];
+      const auto& goal_duration = node["goalDurations"][i];
+
       std::vector<std::vector<int>> all_goals = goal.as<std::vector<std::vector<int>>>();
       std::vector<std::vector<int>> all_time_windows = time_window.as<std::vector<std::vector<int>>>();
+      std::vector<int> all_durations = goal_duration.as<std::vector<int>>();
+
       int num_goals = all_goals.size();
       task_definition[std::to_string(task_id)] = all_goals;
       task_time_window_definition[std::to_string(task_id)] = all_time_windows;
+
       std::vector<int> goal_last_element = goal.as<std::vector<std::vector<int>>>().back();
       
       // Find sum of costs to all goals 
       int sum_cost = 0;
       int curr_cost = 0;
-      sum_cost = m_heuristic.getValue(Location(startStates[agent_id].x,startStates[agent_id].y), Location(all_goals[0][0], all_goals[0][1]));
-
+      int curr_time_cost = 0;
+      sum_cost = m_heuristic.getValue(Location(startStates[agent_id].x,startStates[agent_id].y), Location(all_goals[0][0], all_goals[0][1])) + all_durations[0];
       for (int j=1; j<all_goals.size(); j++){
 
           int prev_goal_x = all_goals[j-1][0];
@@ -178,7 +184,8 @@ std::vector<t_map> createMultiGoalTimedCostMatrix(std::string inputFile, NextBes
           int curr_goal_x = all_goals[j][0];
           int curr_goal_y = all_goals[j][1];
           curr_cost = m_heuristic.getValue(Location(prev_goal_x, prev_goal_y), Location(curr_goal_x, curr_goal_y));
-          sum_cost += curr_cost;
+          curr_time_cost = all_durations[j];
+          sum_cost += curr_cost + curr_time_cost;
       }
 
       // If the sum of costs is less than the time window, then the agent can reach all goals in time
@@ -225,7 +232,7 @@ int main(int argc, char* argv[]) {
   std::string outputFile2;
 
   desc.add_options()("help", "produce help message")(
-      "input,i", po::value<std::string>(&inputFile)->default_value("../benchmark/custom/mapfta3.yaml"),
+      "input,i", po::value<std::string>(&inputFile)->default_value("../benchmark/custom/mapfta4.yaml"),
       "input cost (txt)")("output-1,o",
                           po::value<std::string>(&outputFile1)->default_value(
                                "output_ecbsta_untimed.yaml"),

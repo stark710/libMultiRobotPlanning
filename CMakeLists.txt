@@ -37,6 +37,7 @@ set(ALL_SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/a_star.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/a_star_epsilon.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/ml_a_star.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/ml_a_star_durations.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/assignment.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/assignment_mg.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/cbs.hpp
@@ -45,6 +46,7 @@ set(ALL_SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/ecbs_ta.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/ecbs_ta_mla.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/ecbs_ta_mla_timewindow.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/ecbs_ta_mla_timewindow_durations.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/neighbor.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/next_best_assignment.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libMultiRobotPlanning/next_best_assignment_mg.hpp
@@ -61,6 +63,7 @@ set(ALL_SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/example/ecbs_ta.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/ecbs_ta_mla.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/ecbs_ta_mla_timewindow.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/example/ecbs_ta_mla_timewindow_durations.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/mapf_prioritized_sipp.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/next_best_assignment.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/example/next_best_assignment_mg.cpp
@@ -183,11 +186,20 @@ target_link_libraries(ecbs_ta_mla
   yaml-cpp
 )
 
-## ecbs_ta_mg
+## ecbs_ta_mla_timewindow
 add_executable(ecbs_ta_mla_timewindow
   example/ecbs_ta_mla_timewindow.cpp
 )
 target_link_libraries(ecbs_ta_mla_timewindow
+  ${Boost_LIBRARIES}
+  yaml-cpp
+)
+
+## ecbs_ta_mla_timewindow_durations
+add_executable(ecbs_ta_mla_timewindow_durations
+  example/ecbs_ta_mla_timewindow_durations.cpp
+)
+target_link_libraries(ecbs_ta_mla_timewindow_durations
   ${Boost_LIBRARIES}
   yaml-cpp
 )
