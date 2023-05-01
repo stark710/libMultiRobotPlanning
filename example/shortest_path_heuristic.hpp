@@ -45,12 +45,14 @@ class ShortestPathHeuristic {
     writeDotFile(searchGraph, "searchGraph.dot");
 
     m_shortestDistance = new distanceMatrix_t(boost::num_vertices(searchGraph));
+   
     distanceMatrixMap_t distanceMap(*m_shortestDistance, searchGraph);
     // The following generates a clang-tidy error, see
     // https://svn.boost.org/trac10/ticket/10830
     boost::floyd_warshall_all_pairs_shortest_paths(
         searchGraph, distanceMap,
         boost::weight_map(boost::get(&Edge::weight, searchGraph)));
+    std::cout<<"after floyd warshall \n";
   }
 
   ~ShortestPathHeuristic() { delete m_shortestDistance; }

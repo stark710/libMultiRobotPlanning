@@ -293,7 +293,7 @@ class Environment {
     
   std::map<std::string, std::string> solution;
   m_assignment.solve(task_definition);
-  std::cout << " Found initial solution!" << std::endl;
+  // std::cout << " Found initial solution!" << std::endl;
   }
 
   void setLowLevelContext(size_t agentIdx, const Constraints* constraints,
@@ -426,7 +426,7 @@ class Environment {
 
     atGoal = s.x == current_goal.x && s.y == current_goal.y;
     if(atGoal && s.time > m_lastGoalConstraint && current_goal_label == env_goal_label) {
-      std::cout << "Goal: " << s.x << ", " << s.y << " at time: " << s.time << std::endl;
+      // std::cout << "Goal: " << s.x << ", " << s.y << " at time: " << s.time << std::endl;
     }
 
     return atGoal && s.time > m_lastGoalConstraint && current_goal_label == env_goal_label;
@@ -687,6 +687,8 @@ class Environment {
 };
 
 int main(int argc, char* argv[]) {
+  // for (int i=0;i<40;i++) {
+  // std::cout << "i: " << i << std::endl;
   namespace po = boost::program_options;
   // Declare the supported options.
   po::options_description desc("Allowed options");
@@ -698,10 +700,10 @@ int main(int argc, char* argv[]) {
   // Added ../benchmark/custom/mapfta1.yaml as a default input file
 
   desc.add_options()("help", "produce help message")(
-      "input,i", po::value<std::string>(&inputFile)->default_value("../benchmark/custom/mapfta3.yaml"),
+      "input,i", po::value<std::string>(&inputFile)->default_value("../example/random_maps/solvable_maps/map_10_agents_multigoal.yaml"),
       "input file (YAML)")("output,o",
                            po::value<std::string>(&outputFile)->default_value(
-                               "output_ecbsta3.yaml"),
+                               "../example/output/final_results/vannila/output_w_1_sparse.yaml"),
                            "output file (YAML)")(
       "suboptimality,w", po::value<float>(&w)->default_value(1.0),
       "suboptimality bound")(
@@ -724,6 +726,7 @@ int main(int argc, char* argv[]) {
     std::cerr << desc << std::endl;
     return 1;
   }
+  // std::cout<<"reached ehre"<<std::endl;
   YAML::Node config = YAML::LoadFile(inputFile);
   NextBestAssignment<std::string, std::string> assignment;
   std::unordered_set<Location> obstacles;
@@ -734,23 +737,32 @@ int main(int argc, char* argv[]) {
   const auto& dim = config["map"]["dimensions"];
   int dimx = dim[0].as<int>();
   int dimy = dim[1].as<int>();
-
+  int i = 0;
   for (const auto& node : config["map"]["obstacles"]) {
+    // std::cout<<"i: "<<i++<<std::endl;
     obstacles.insert(Location(node[0].as<int>(), node[1].as<int>()));
   }
   int agent_id=0;
   int task_id = 0;
+  
   for (const auto& node : config["agents"]) {
     std::vector<std::vector<int>> agent_potential_goals;
+    // std::cout<<"reached here"<<std::endl;
     ShortestPathHeuristic m_heuristic(dimx, dimy, obstacles);
-
+    // std::cout<<"exited shortest path heuristic"<<std::endl;
     const auto& start = node["start"];
     startStates.emplace_back(State(0, start[0].as<int>(), start[1].as<int>()));
     goals.resize(goals.size() + 1);
     task_id = 0;
-    for (const auto& goal : node["potentialGoals"]) {
-
-      std::vector<std::vector<int>> all_goals = goal.as<std::vector<std::vector<int>>>();
+    // std::cout<<"before for loop"<<std::endl;
+    for (int i = 0; i < int(node["potentialGoals"].size()); i++) {
+      
+      const auto& goal = node["potentialGoals"][i];  
+      std::vector<std::vector<int>> all_goals;
+      for(auto g:goal) {
+        // std::cout<<"g: "<<g.as<std::vector<int>>()[0]<<", "<<g.as<std::vector<int>>()[1]<<"\n";
+        all_goals.push_back(g.as<std::vector<int>>());
+      }
       task_definition[std::to_string(task_id)] = all_goals;
 
       
@@ -762,7 +774,7 @@ int main(int argc, char* argv[]) {
     }
     agent_id++;
   }
-
+  // std::cout<<"reached here"<<std::endl;
     // sanity check: no identical start states
   // assignment.nextSolution(task,task_definition);
   std::unordered_set<State> startStatesSet;
@@ -773,7 +785,7 @@ int main(int argc, char* argv[]) {
     }
     startStatesSet.insert(s);
   }
-
+  std::cout<<"reached ehre!\n";
   Environment mapf(dimx, dimy, obstacles, startStates, goals,
                    maxTaskAssignments, assignment, task_definition);
 
@@ -803,18 +815,10 @@ int main(int argc, char* argv[]) {
     out << "  runtime: " << timer.elapsedSeconds() << std::endl;
     out << "  highLevelExpanded: " << mapf.highLevelExpanded() << std::endl;
     out << "  lowLevelExpanded: " << mapf.lowLevelExpanded() << std::endl;
+    out << "  TotalExpanded: " << mapf.lowLevelExpanded() + mapf.highLevelExpanded() << std::endl;
     out << "  numTaskAssignments: " << mapf.numTaskAssignments() << std::endl;
     out << "schedule:" << std::endl;
     for (size_t a = 0; a < solution.size(); ++a) {
-      // std::cout << "Solution for: " << a << std::endl;
-      // for (size_t i = 0; i < solution[a].actions.size(); ++i) {
-      //   std::cout << solution[a].states[i].second << ": " <<
-      //   solution[a].states[i].first << "->" << solution[a].actions[i].first
-      //   << "(cost: " << solution[a].actions[i].second << ")" << std::endl;
-      // }
-      // std::cout << solution[a].states.back().second << ": " <<
-      // solution[a].states.back().first << std::endl;
-
       out << "  agent" << a << ":" << std::endl;
       for (const auto& state : solution[a].states) {
         out << "    - x: " << state.first.x << std::endl
@@ -826,5 +830,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Planning NOT successful!" << std::endl;
   }
 
+  
+  
   return 0;
 }

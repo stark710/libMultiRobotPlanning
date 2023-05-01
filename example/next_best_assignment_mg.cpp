@@ -158,14 +158,35 @@ std::vector<t_map> createMultiGoalTimedCostMatrix(std::string inputFile, NextBes
     // Iterate through potential goals and their time windows
     for (int i=0; i<node["potentialGoals"].size(); i++){
 
+      // const auto& goal = node["potentialGoals"][i];
+      // const auto& time_window = node["goalTimeWindows"][i];
+      // const auto& goal_duration = node["goalDurations"][i];
+
+      // std::vector<std::vector<int>> all_goals = goal.as<std::vector<std::vector<int>>>();
+      // std::vector<std::vector<int>> all_time_windows = time_window.as<std::vector<std::vector<int>>>();
+      // std::vector<int> all_durations = goal_duration.as<std::vector<int>>();
       const auto& goal = node["potentialGoals"][i];
       const auto& time_window = node["goalTimeWindows"][i];
+    
+      std::vector<std::vector<int>> all_goals;
+      for(auto g:goal) {
+        // std::cout<<"g: "<<g.as<std::vector<int>>()[0]<<", "<<g.as<std::vector<int>>()[1]<<"\n";
+        all_goals.push_back(g.as<std::vector<int>>());
+      }
+
       const auto& goal_duration = node["goalDurations"][i];
+      std::vector<std::vector<int>> all_time_windows;
+      for(auto t:time_window) {
+        // std::cout<<"t: "<<t.as<std::vector<int>>()[0]<<", "<<t.as<std::vector<int>>()[1]<<"\n";
+          all_time_windows.push_back(t.as<std::vector<int>>());
+      }
 
-      std::vector<std::vector<int>> all_goals = goal.as<std::vector<std::vector<int>>>();
-      std::vector<std::vector<int>> all_time_windows = time_window.as<std::vector<std::vector<int>>>();
-      std::vector<int> all_durations = goal_duration.as<std::vector<int>>();
-
+      // std::cout<<"goal_duration size: "<<goal_duration.size()<<"\n";
+      std::vector<int> all_durations;
+      for(auto d:goal_duration) {
+        // std::cout<<"d: "<<d.as<int>()<<"\n";
+        all_durations.push_back(d.as<int>());
+      }
       int num_goals = all_goals.size();
       task_definition[std::to_string(task_id)] = all_goals;
       task_time_window_definition[std::to_string(task_id)] = all_time_windows;
@@ -232,7 +253,7 @@ int main(int argc, char* argv[]) {
   std::string outputFile2;
 
   desc.add_options()("help", "produce help message")(
-      "input,i", po::value<std::string>(&inputFile)->default_value("../benchmark/custom/mapfta4.yaml"),
+      "input,i", po::value<std::string>(&inputFile)->default_value("../example/random_maps/map_1.yaml"),
       "input cost (txt)")("output-1,o",
                           po::value<std::string>(&outputFile1)->default_value(
                                "output_ecbsta_untimed.yaml"),

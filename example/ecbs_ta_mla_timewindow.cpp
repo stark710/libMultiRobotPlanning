@@ -441,7 +441,7 @@ class Environment {
     int deadline = current_goal_time[1];
     atGoal = s.x == current_goal.x && s.y == current_goal.y && s.time >= release_time && s.time <= deadline;
     if(atGoal && s.time > m_lastGoalConstraint && current_goal_label == env_goal_label) {
-      std::cout << "Goal: " << s.x << ", " << s.y << " at time: " << s.time << std::endl;
+      // std::cout << "Goal: " << s.x << ", " << s.y << " at time: " << s.time << std::endl;
     }
 
     return atGoal && s.time > m_lastGoalConstraint && current_goal_label == env_goal_label;
@@ -735,10 +735,10 @@ int main(int argc, char* argv[]) {
   // Added ../benchmark/custom/mapfta1.yaml as a default input file
 
   desc.add_options()("help", "produce help message")(
-      "input,i", po::value<std::string>(&inputFile)->default_value("../benchmark/custom/mapfta3.yaml"),
+      "input,i", po::value<std::string>(&inputFile)->default_value("../example/random_maps/solvable_maps/map_10_agents.yaml"),
       "input file (YAML)")("output,o",
                            po::value<std::string>(&outputFile)->default_value(
-                               "output_ecbsta.yaml"),
+                               "../example/output/final_results/timewindow/output_w_1.5_dense.yaml"),
                            "output file (YAML)")(
       "suboptimality,w", po::value<float>(&w)->default_value(1.0),
       "suboptimality bound")(
@@ -780,26 +780,43 @@ int main(int argc, char* argv[]) {
   int agent_id=0;
   int task_id = 0;
   for (const auto& node : config["agents"]) {
-    std::vector<std::vector<int>> agent_potential_goals;
+        std::vector<std::vector<int>> agent_potential_goals;
     ShortestPathHeuristic m_heuristic(dimx, dimy, obstacles);
 
     const auto& start = node["start"];
     startStates.emplace_back(State(0, start[0].as<int>(), start[1].as<int>()));
     goals.resize(goals.size() + 1);
     task_id = 0;
-    for (int i=0; i<int(node["potentialGoals"].size()); i++) {
-      
+    std::cout<<"potential goals size: "<<node["potentialGoals"].size()<<"\n";
+    for (int i = 0; i < int(node["potentialGoals"].size()); i++) {
       const auto& goal = node["potentialGoals"][i];
       const auto& time_window = node["goalTimeWindows"][i];
-      std::vector<std::vector<int>> all_goals = goal.as<std::vector<std::vector<int>>>();
-      std::vector<std::vector<int>> all_time_windows = time_window.as<std::vector<std::vector<int>>>();
+    
+      std::vector<std::vector<int>> all_goals;
+      for(auto g:goal) {
+        // std::cout<<"g: "<<g.as<std::vector<int>>()[0]<<", "<<g.as<std::vector<int>>()[1]<<"\n";
+        all_goals.push_back(g.as<std::vector<int>>());
+      }
+
+      const auto& goal_duration = node["goalDurations"][i];
+      std::vector<std::vector<int>> all_time_windows;
+      for(auto t:time_window) {
+        // std::cout<<"t: "<<t.as<std::vector<int>>()[0]<<", "<<t.as<std::vector<int>>()[1]<<"\n";
+          all_time_windows.push_back(t.as<std::vector<int>>());
+      }
+
+      // std::cout<<"goal_duration size: "<<goal_duration.size()<<"\n";
+      std::vector<int> all_durations;
+      for(auto d:goal_duration) {
+        // std::cout<<"d: "<<d.as<int>()<<"\n";
+        all_durations.push_back(d.as<int>());
+      }
+
       int num_goals = all_goals.size();
-      
+
       task_definition[std::to_string(task_id)] = all_goals;
       task_time_definition[std::to_string(task_id)] = all_time_windows;
-
-      
-      std::vector<int> goal_last_element = goal.as<std::vector<std::vector<int>>>().back();
+      // task_duration_definition[std::to_string(task_id)] = all_durations;
       // Find sum of costs to all goals 
       int sum_cost = 0;
       int curr_cost = 0;
@@ -870,6 +887,7 @@ int main(int argc, char* argv[]) {
     out << "  runtime: " << timer.elapsedSeconds() << std::endl;
     out << "  highLevelExpanded: " << mapf.highLevelExpanded() << std::endl;
     out << "  lowLevelExpanded: " << mapf.lowLevelExpanded() << std::endl;
+    out << " totalNodesExapnded: "<< mapf.lowLevelExpanded() + mapf.highLevelExpanded() << std::endl;
     out << "  numTaskAssignments: " << mapf.numTaskAssignments() << std::endl;
     out << "schedule:" << std::endl;
     for (size_t a = 0; a < solution.size(); ++a) {

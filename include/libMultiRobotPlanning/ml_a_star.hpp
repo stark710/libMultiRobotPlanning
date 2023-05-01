@@ -83,7 +83,7 @@ purposes.
 
         while (!openSet.empty()) {
           Node current = openSet.top();
-          // m_env.onExpandNode(current.state, current.fScore, current.gScore);
+          m_env.onExpandNode(current.state, current.fScore, current.gScore);
 
           // if (m_env.isSolution(current.state)) {
           //   solution.states.clear();
@@ -140,7 +140,7 @@ purposes.
 
 // traverse neighbors
           neighbors.clear();
-          m_env.getNeighborsDurations(current.state, neighbors, reachedGoal);
+          m_env.getNeighbors(current.state, neighbors, reachedGoal);
 
           if(reachedGoal) {   
             int curr_label = current.state.label+1;

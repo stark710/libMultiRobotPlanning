@@ -448,8 +448,8 @@ class Environment {
              s.time >= release_time && s.time <= deadline;
     if (atGoal && s.time > m_lastGoalConstraint &&
         current_goal_label == env_goal_label) {
-      std::cout << "Goal: " << s.x << ", " << s.y << " at time: " << s.time
-                << std::endl;
+      // std::cout << "Goal: " << s.x << ", " << s.y << " at time: " << s.time
+                // << std::endl;
     }
 
     return atGoal && s.time > m_lastGoalConstraint &&
@@ -469,8 +469,8 @@ class Environment {
              s.time >= release_time && s.time <= deadline;
     if (atGoal && s.time > m_lastGoalConstraint &&
         current_goal_label == env_goal_label) {
-      std::cout << "Goal: " << s.x << ", " << s.y << " at time: " << s.time
-                << std::endl;
+      // std::cout << "Goal: " << s.x << ", " << s.y << " at time: " << s.time
+      //           << std::endl;
     }
 
     withinDuration = isGoalWithinDuration(s, env_goal_label);
@@ -523,7 +523,7 @@ class Environment {
 
     if (reachedGoal && withinDuration) {
       State waitatGoal(s.time + 1, s.x, s.y, new_label, s.duration + 1);
-      cost = -10000;
+      cost = -1000;
       neighbors.emplace_back(
           Neighbor<State, Action, int>(waitatGoal, Action::Wait, cost));
     }
@@ -841,10 +841,10 @@ int main(int argc, char* argv[]) {
   desc.add_options()("help", "produce help message")(
       "input,i",
       po::value<std::string>(&inputFile)
-          ->default_value("../benchmark/custom/mapfta4.yaml"),
+          ->default_value("../example/random_maps/map_34.yaml"),
       "input file (YAML)")(
       "output,o",
-      po::value<std::string>(&outputFile)->default_value("output_ecbsta.yaml"),
+      po::value<std::string>(&outputFile)->default_value("output_ecbs_durations_34.yaml"),
       "output file (YAML)")("suboptimality,w",
                             po::value<float>(&w)->default_value(1.0),
                             "suboptimality bound")(
@@ -893,16 +893,30 @@ int main(int argc, char* argv[]) {
     startStates.emplace_back(State(0, start[0].as<int>(), start[1].as<int>()));
     goals.resize(goals.size() + 1);
     task_id = 0;
+    // std::cout<<"potential goals size: "<<node["potentialGoals"].size()<<"\n";
     for (int i = 0; i < int(node["potentialGoals"].size()); i++) {
       const auto& goal = node["potentialGoals"][i];
       const auto& time_window = node["goalTimeWindows"][i];
-      const auto& goal_duration = node["goalDurations"][i];
+    
+      std::vector<std::vector<int>> all_goals;
+      for(auto g:goal) {
+        // std::cout<<"g: "<<g.as<std::vector<int>>()[0]<<", "<<g.as<std::vector<int>>()[1]<<"\n";
+        all_goals.push_back(g.as<std::vector<int>>());
+      }
 
-      std::vector<std::vector<int>> all_goals =
-          goal.as<std::vector<std::vector<int>>>();
-      std::vector<std::vector<int>> all_time_windows =
-          time_window.as<std::vector<std::vector<int>>>();
-      std::vector<int> all_durations = goal_duration.as<std::vector<int>>();
+      const auto& goal_duration = node["goalDurations"][i];
+      std::vector<std::vector<int>> all_time_windows;
+      for(auto t:time_window) {
+        // std::cout<<"t: "<<t.as<std::vector<int>>()[0]<<", "<<t.as<std::vector<int>>()[1]<<"\n";
+          all_time_windows.push_back(t.as<std::vector<int>>());
+      }
+
+      // std::cout<<"goal_duration size: "<<goal_duration.size()<<"\n";
+      std::vector<int> all_durations;
+      for(auto d:goal_duration) {
+        // std::cout<<"d: "<<d.as<int>()<<"\n";
+        all_durations.push_back(d.as<int>());
+      }
 
       int num_goals = all_goals.size();
 
@@ -910,9 +924,10 @@ int main(int argc, char* argv[]) {
       task_time_definition[std::to_string(task_id)] = all_time_windows;
       task_duration_definition[std::to_string(task_id)] = all_durations;
 
-      std::vector<int> goal_last_element =
-          goal.as<std::vector<std::vector<int>>>().back();
+      // std::vector<int> goal_last_element =
+      //     goal.as<std::vector<std::vector<int>>>().back();
       // Find sum of costs to all goals
+      // std::cout<<"reached here \n";
       int sum_cost = 0;
       int curr_cost = 0;
       int curr_time_cost = 0;
@@ -962,7 +977,7 @@ int main(int argc, char* argv[]) {
     }
     startStatesSet.insert(s);
   }
-
+  // std::cout<<"reached here \n";
   Environment mapf(dimx, dimy, obstacles, startStates, goals,
                    maxTaskAssignments, assignment, task_definition,
                    task_time_definition, task_duration_definition);
@@ -991,6 +1006,7 @@ int main(int argc, char* argv[]) {
     out << "  runtime: " << timer.elapsedSeconds() << std::endl;
     out << "  highLevelExpanded: " << mapf.highLevelExpanded() << std::endl;
     out << "  lowLevelExpanded: " << mapf.lowLevelExpanded() << std::endl;
+    out << "  totalNodesExpanded: " << mapf.lowLevelExpanded() + mapf.highLevelExpanded()<< std::endl;
     out << "  numTaskAssignments: " << mapf.numTaskAssignments() << std::endl;
     out << "schedule:" << std::endl;
     for (size_t a = 0; a < solution.size(); ++a) {
@@ -1007,7 +1023,7 @@ int main(int argc, char* argv[]) {
       for (const auto& state : solution[a].states) {
         out << "    - x: " << state.first.x << std::endl
             << "      y: " << state.first.y << std::endl
-            << "      t: " << state.second << std::endl;
+            << "      t: " << state.first.time << std::endl;
       }
     }
   } else {

@@ -198,7 +198,7 @@ int main(int argc, char* argv[]) {
     dimX = std::max(dimX, x);
     ++y;
   }
-  std::cout << dimX << " " << y << std::endl;
+  // std::cout << dimX << " " << y << std::endl;
 
   bool success = false;
 
@@ -234,7 +234,7 @@ int main(int argc, char* argv[]) {
                 << "->" << solution.actions[i].first
                 << "(cost: " << solution.actions[i].second << ")" << std::endl;
       if (solution.states[i].first.x == goal1.x && solution.states[i].first.y == goal1.y){
-        std::cout<<"Reached goal location 1!"<<std::endl;
+        // std::cout<<"Reached goal location 1!"<<std::endl;
       }
  
     }
